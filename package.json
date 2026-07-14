@@ -1,0 +1,13 @@
+{
+  "name": "@masdevan/max-charts",
+  "version": "0.1.0",
+  "description": "Pure JavaScript candlestick chart library. Zero dependencies.",
+  "type": "module",
+  "exports": "./candlestick/candlestick.js",
+  "files": [
+    "candlestick/",
+    "fonts/"
+  ],
+  "license": "MIT",
+  "author": ""
+}
