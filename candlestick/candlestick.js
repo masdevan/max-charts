@@ -15,7 +15,7 @@ export class CandlestickChart {
       this._data = []
       this._loadFn = opts.load || null
       this._loadLimit = opts.limit || 100
-      this._loadThreshold = opts.threshold || 20
+      this._loadThreshold = opts.threshold || 100
       this._loading = false
       this._hasMore = true
       this._loadBeforeDate = null
@@ -179,6 +179,7 @@ export class CandlestickChart {
       } else {
         const added = results.slice().reverse()
         this._startIndex += added.length
+        this._dragStartIndex += added.length
         this._data = [...added, ...this._data]
       }
 
@@ -220,6 +221,7 @@ export class CandlestickChart {
       const shift = Math.round((this._dragStartX - e.clientX) / candleW)
       this._startIndex = Math.max(0, Math.min(this._data.length - this._visibleCount, this._dragStartIndex + shift))
       this._render()
+      this._checkLoadMore()
     }
 
     this._onDocumentUp = () => {

@@ -17,18 +17,18 @@ import { CandlestickChart } from '../candlestick/candlestick.js'
 
 const res = await fetch('../collections/candlestick.json')
 const allData = await res.json()
+const h1Data = allData.filter(d => d.timeframe === 'h1')
 
 const chart = new CandlestickChart('#chart', {
   width: 600,
   height: 300,
   limit: 100,
   load: async (beforeDate) => {
-    const filtered = allData.filter(d => d.timeframe === 'h1')
-    if (!beforeDate) return filtered.slice(-100).reverse()
-    const idx = filtered.findIndex(d => d.date >= beforeDate)
+    if (!beforeDate) return h1Data.slice(-100).reverse()
+    const idx = h1Data.findIndex(d => d.date >= beforeDate)
     if (idx <= 0) return []
     const start = Math.max(0, idx - 100)
-    return filtered.slice(start, idx).reverse()
+    return h1Data.slice(start, idx).reverse()
   }
 })
 </script>
