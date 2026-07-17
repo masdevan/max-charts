@@ -23,6 +23,9 @@ export default {
 
     this._onDocumentMove = (e) => {
       if (!this._isDragging) return
+      const rect = this._canvas.getBoundingClientRect()
+      this._mouseX = e.clientX - rect.left
+      this._mouseY = e.clientY - rect.top
       const m = this._lastMargin || this._getMargin()
       const chartW = this._width - m.left - m.right
       const chartH = this._height - m.top - m.bottom
