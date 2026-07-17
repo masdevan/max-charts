@@ -43,6 +43,8 @@ export class CandlestickChart {
     this._frozenMinP = null
     this._frozenMaxP = null
     this._isDragging = false
+    this._priceDragging = false
+    this._dateZooming = false
     this._mouseX = null
     this._mouseY = null
     this._init()
@@ -196,7 +198,7 @@ export class CandlestickChart {
     if (!visibleData.length) return
 
     let minP, maxP
-    if (this._priceLocked) {
+    if (this._priceLocked && !this._priceDragging) {
       minP = Infinity; maxP = -Infinity
       for (const d of visibleData) {
         if (d.low < minP) minP = d.low
