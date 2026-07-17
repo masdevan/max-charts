@@ -56,14 +56,24 @@ export function drawCandlesticks(ctx, visibleData, startIdx, left, chartW, chart
   }
 }
 
-export function drawXAxis(ctx, visibleData, startIdx, left, chartW, top, chartH, visibleCount, colors, fontSize) {
+export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibleCount, colors, fontSize) {
   const step = Math.max(1, Math.floor(visibleCount / 6))
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.font = fontSize + 'px "Terminal Grotesque", monospace'
-  ctx.globalAlpha = 0.25
 
-  for (let i = 0; i < visibleData.length; i += step) {
+  // estimate interval from actual data
+  let avgMs = 86400000
+  const last = Math.min(startIdx + visibleCount, data.length - 1)
+  const first = Math.max(0, last - 5)
+  if (last - first >= 2) {
+    let total = 0
+    for (let i = first + 1; i <= last; i++) total += new Date(data[i].date).getTime() - new Date(data[i - 1].date).getTime()
+    avgMs = total / (last - first)
+  }
+
+  ctx.globalAlpha = 0.25
+  for (let i = 0; i < visibleCount; i += step) {
     const x = left + i * (chartW / visibleCount) + (chartW / visibleCount) / 2
     ctx.strokeStyle = colors.grid
     ctx.lineWidth = 1
@@ -74,10 +84,19 @@ export function drawXAxis(ctx, visibleData, startIdx, left, chartW, top, chartH,
   }
 
   ctx.globalAlpha = 1
-  for (let i = 0; i < visibleData.length; i += step) {
-    const d = visibleData[i]
+  for (let i = 0; i < visibleCount; i += step) {
+    const idx = startIdx + i
     const x = left + i * (chartW / visibleCount) + (chartW / visibleCount) / 2
-    const dt = new Date(d.date)
+    let dt
+    if (idx >= 0 && idx < data.length) {
+      dt = new Date(data[idx].date)
+    } else if (data.length > 0) {
+      const ref = idx < 0 ? data[0] : data[data.length - 1]
+      const offset = idx < 0 ? idx : idx - (data.length - 1)
+      dt = new Date(new Date(ref.date).getTime() + offset * avgMs)
+    } else {
+      continue
+    }
     ctx.fillStyle = colors.text
     ctx.fillText(dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), x, top + chartH + fontSize + 4)
   }

@@ -195,22 +195,26 @@ export class CandlestickChart {
     const endIdx = Math.ceil(Math.min(this._startIndex + this._visibleCount, this._data.length))
     const startIdx = Math.floor(this._startIndex)
     const visibleData = this._data.slice(startIdx, endIdx)
-    if (!visibleData.length) return
 
     let minP, maxP
-    if (this._priceLocked && !this._priceDragging) {
-      minP = Infinity; maxP = -Infinity
-      for (const d of visibleData) {
-        if (d.low < minP) minP = d.low
-        if (d.high > maxP) maxP = d.high
+    if (visibleData.length) {
+      if (this._priceLocked && !this._priceDragging) {
+        minP = Infinity; maxP = -Infinity
+        for (const d of visibleData) {
+          if (d.low < minP) minP = d.low
+          if (d.high > maxP) maxP = d.high
+        }
+        const pad = (maxP - minP) * 0.05 || 1
+        minP -= pad; maxP += pad
+        this._frozenMinP = minP; this._frozenMaxP = maxP
+      } else {
+        minP = this._frozenMinP; maxP = this._frozenMaxP
       }
-      const pad = (maxP - minP) * 0.05 || 1
-      minP -= pad; maxP += pad
-      this._frozenMinP = minP; this._frozenMaxP = maxP
+      this._minP = minP; this._maxP = maxP
     } else {
-      minP = this._frozenMinP; maxP = this._frozenMaxP
+      if (this._minP == null || this._maxP == null) return
+      minP = this._minP; maxP = this._maxP
     }
-    this._minP = minP; this._maxP = maxP
 
     ctx.font = fs + 'px "Terminal Grotesque", monospace'
     const pw = Math.max(ctx.measureText(formatPrice(maxP)).width, ctx.measureText(formatPrice(minP)).width)
@@ -231,9 +235,11 @@ export class CandlestickChart {
     ctx.beginPath()
     ctx.rect(m.left, m.top, chartW, chartH)
     ctx.clip()
-    drawCandlesticks(ctx, visibleData, startIdx, m.left, chartW, chartH, m.top, yPos, this._visibleCount, this._colors)
+    if (visibleData.length) {
+      drawCandlesticks(ctx, visibleData, startIdx, m.left, chartW, chartH, m.top, yPos, this._visibleCount, this._colors)
+    }
     ctx.restore()
-    drawXAxis(ctx, visibleData, startIdx, m.left, chartW, m.top, chartH, this._visibleCount, this._colors, fs)
+    drawXAxis(ctx, this._data, startIdx, m.left, chartW, m.top, chartH, this._visibleCount, this._colors, fs)
 
     ctx.strokeStyle = this._colors.grid
     ctx.lineWidth = 1
