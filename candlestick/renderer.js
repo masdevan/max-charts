@@ -9,6 +9,7 @@ export function drawGrid(ctx, chartW, chartH, left, top, minP, maxP, yPos, color
   ctx.textAlign = 'right'
   ctx.textBaseline = 'middle'
   ctx.font = fontSize + 'px "Terminal Grotesque", monospace'
+  ctx.globalAlpha = 0.25
 
   for (let p = niceMin; p <= niceMax + step * 0.5; p += step) {
     const y = yPos(p)
@@ -19,7 +20,13 @@ export function drawGrid(ctx, chartW, chartH, left, top, minP, maxP, yPos, color
     ctx.moveTo(left, y)
     ctx.lineTo(left + chartW, y)
     ctx.stroke()
-    ctx.fillStyle = colors.text
+  }
+
+  ctx.globalAlpha = 1
+  ctx.fillStyle = colors.text
+  for (let p = niceMin; p <= niceMax + step * 0.5; p += step) {
+    const y = yPos(p)
+    if (y < top || y > top + chartH) continue
     ctx.fillText(formatPrice(p), left - 6, y)
   }
 }
@@ -54,19 +61,24 @@ export function drawXAxis(ctx, visibleData, startIdx, left, chartW, top, chartH,
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.font = fontSize + 'px "Terminal Grotesque", monospace'
+  ctx.globalAlpha = 0.25
 
+  for (let i = 0; i < visibleData.length; i += step) {
+    const x = left + i * (chartW / visibleCount) + (chartW / visibleCount) / 2
+    ctx.strokeStyle = colors.grid
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(x, top)
+    ctx.lineTo(x, top + chartH)
+    ctx.stroke()
+  }
+
+  ctx.globalAlpha = 1
   for (let i = 0; i < visibleData.length; i += step) {
     const d = visibleData[i]
     const x = left + i * (chartW / visibleCount) + (chartW / visibleCount) / 2
     const dt = new Date(d.date)
     ctx.fillStyle = colors.text
     ctx.fillText(dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), x, top + chartH + fontSize + 4)
-
-    ctx.strokeStyle = colors.grid
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(x, top + chartH)
-    ctx.lineTo(x, top + chartH + 4)
-    ctx.stroke()
   }
 }
