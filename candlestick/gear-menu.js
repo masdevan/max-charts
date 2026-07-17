@@ -1,0 +1,95 @@
+import { createGearIcon } from '../icons/gear.js'
+
+export default {
+  _toggleLock() {
+    this._priceLocked = !this._priceLocked
+    if (!this._priceLocked) {
+      this._frozenMinP = this._minP
+      this._frozenMaxP = this._maxP
+    }
+    this._updateGearMenu()
+    this._render()
+  },
+
+  _setupGearMenu() {
+    this._modalOpen = false
+    const c = this._colors
+
+    this._gearBtn = document.createElement('button')
+    this._gearBtn.appendChild(createGearIcon(c.text))
+    this._gearBtn.style.cssText =
+      'position:absolute;cursor:pointer;z-index:3;' +
+      'background:none;border:none;padding:2px;display:flex;align-items:center;justify-content:center'
+
+    this._modal = document.createElement('div')
+    this._modal.style.cssText = 'position:absolute;z-index:3;display:none;' +
+      'background:' + c.bg + ';border:1px solid ' + c.grid + ';' +
+      'border-radius:0;padding:4px 0;' +
+      'font-family:"Terminal Grotesque",monospace;font-size:11px;min-width:100px'
+
+    this._modalAuto = document.createElement('div')
+    this._modalAuto.textContent = 'Chart Auto'
+    this._modalAuto.style.cssText = 'padding:4px 10px;cursor:pointer;color:' + c.text
+    this._modalAuto.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (!this._priceLocked) this._toggleLock()
+      this._hideModal()
+    })
+
+    this._modalFixed = document.createElement('div')
+    this._modalFixed.textContent = 'Chart Fixed'
+    this._modalFixed.style.cssText = 'padding:4px 10px;cursor:pointer;color:' + c.text
+    this._modalFixed.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (this._priceLocked) this._toggleLock()
+      this._hideModal()
+    })
+
+    this._modal.appendChild(this._modalAuto)
+    this._modal.appendChild(this._modalFixed)
+
+    this._onGearClick = (e) => {
+      e.stopPropagation()
+      this._toggleModal()
+    }
+    this._gearBtn.addEventListener('click', this._onGearClick)
+
+    this._onDocClick = (e) => {
+      if (this._modalOpen && !this._modal.contains(e.target) && e.target !== this._gearBtn) {
+        this._hideModal()
+      }
+    }
+    document.addEventListener('click', this._onDocClick)
+
+    this._wrapper.appendChild(this._gearBtn)
+    this._wrapper.appendChild(this._modal)
+  },
+
+  _updateGearMenu() {
+    const active = this._colors.grid
+    const inactive = this._colors.bg
+    this._modalAuto.style.background = this._priceLocked ? active : inactive
+    this._modalFixed.style.background = this._priceLocked ? inactive : active
+  },
+
+  _positionGearMenu() {
+    if (!this._modal) return
+    const m = this._getMargin()
+    const sz = this._gearBtn.offsetHeight || 20
+    this._gearBtn.style.bottom = Math.max(4, m.bottom - sz + 18) + 'px'
+    this._gearBtn.style.right = Math.max(0, m.right - sz - 5) + 'px'
+    this._modal.style.bottom = m.bottom + 'px'
+    this._modal.style.right = m.right + 'px'
+  },
+
+  _toggleModal() {
+    this._modalOpen = !this._modalOpen
+    this._modal.style.display = this._modalOpen ? 'block' : 'none'
+    if (this._modalOpen) this._updateGearMenu()
+  },
+
+  _hideModal() {
+    this._modalOpen = false
+    this._modal.style.display = 'none'
+  }
+}

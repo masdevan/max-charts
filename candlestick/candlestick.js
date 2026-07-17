@@ -1,7 +1,10 @@
 import { drawGrid, drawCandlesticks, drawXAxis } from './renderer.js'
-import { createTooltip, showTooltip, hideTooltip, getCandleAtX } from './tooltip.js'
-import { createGearIcon } from '../icons/gear.js'
+import { createTooltip } from './tooltip.js'
 import { formatPrice } from './utils.js'
+import gearMethods from './gear-menu.js'
+import eventsMethods from './events.js'
+import crosshairMethods from './crosshair.js'
+import loaderMethods from './loader.js'
 
 export class CandlestickChart {
   constructor(container, dataOrOptions = [], legacyOptions = {}) {
@@ -89,97 +92,6 @@ export class CandlestickChart {
       el = el.parentElement
     }
     this._colors.bg = '#ffffff'
-  }
-
-  _toggleLock() {
-    this._priceLocked = !this._priceLocked
-    if (!this._priceLocked) {
-      this._frozenMinP = this._minP
-      this._frozenMaxP = this._maxP
-    }
-    this._updateGearMenu()
-    this._render()
-  }
-
-  _setupGearMenu() {
-    this._modalOpen = false
-
-    this._gearBtn = document.createElement('button')
-    this._gearBtn.appendChild(createGearIcon(this._colors.text))
-    this._gearBtn.style.cssText =
-      'position:absolute;cursor:pointer;z-index:3;' +
-      'background:none;border:none;padding:2px;display:flex;align-items:center;justify-content:center'
-
-    this._modal = document.createElement('div')
-    this._modal.style.cssText = 'position:absolute;z-index:3;display:none;' +
-      'background:' + this._colors.bg + ';border:1px solid ' + this._colors.grid + ';' +
-      'border-radius:0;padding:4px 0;' +
-      'font-family:"Terminal Grotesque",monospace;font-size:11px;min-width:100px'
-
-    this._modalAuto = document.createElement('div')
-    this._modalAuto.textContent = 'Chart Auto'
-    this._modalAuto.style.cssText = 'padding:4px 10px;cursor:pointer;color:' + this._colors.text
-    this._modalAuto.addEventListener('click', (e) => {
-      e.stopPropagation()
-      if (!this._priceLocked) this._toggleLock()
-      this._hideModal()
-    })
-
-    this._modalFixed = document.createElement('div')
-    this._modalFixed.textContent = 'Chart Fixed'
-    this._modalFixed.style.cssText = 'padding:4px 10px;cursor:pointer;color:' + this._colors.text
-    this._modalFixed.addEventListener('click', (e) => {
-      e.stopPropagation()
-      if (this._priceLocked) this._toggleLock()
-      this._hideModal()
-    })
-
-    this._modal.appendChild(this._modalAuto)
-    this._modal.appendChild(this._modalFixed)
-
-    this._onGearClick = (e) => {
-      e.stopPropagation()
-      this._toggleModal()
-    }
-    this._gearBtn.addEventListener('click', this._onGearClick)
-
-    this._onDocClick = (e) => {
-      if (this._modalOpen && !this._modal.contains(e.target) && e.target !== this._gearBtn) {
-        this._hideModal()
-      }
-    }
-    document.addEventListener('click', this._onDocClick)
-
-    this._wrapper.appendChild(this._gearBtn)
-    this._wrapper.appendChild(this._modal)
-  }
-
-  _updateGearMenu() {
-    const active = this._colors.grid
-    const inactive = this._colors.bg
-    this._modalAuto.style.background = this._priceLocked ? active : inactive
-    this._modalFixed.style.background = this._priceLocked ? inactive : active
-  }
-
-  _positionGearMenu() {
-    if (!this._modal) return
-    const m = this._getMargin()
-    const sz = this._gearBtn.offsetHeight || 20
-    this._gearBtn.style.bottom = Math.max(4, m.bottom - sz + 18) + 'px'
-    this._gearBtn.style.right = Math.max(0, m.right - sz - 5) + 'px'
-    this._modal.style.bottom = m.bottom + 'px'
-    this._modal.style.right = m.right + 'px'
-  }
-
-  _toggleModal() {
-    this._modalOpen = !this._modalOpen
-    this._modal.style.display = this._modalOpen ? 'block' : 'none'
-    if (this._modalOpen) this._updateGearMenu()
-  }
-
-  _hideModal() {
-    this._modalOpen = false
-    this._modal.style.display = 'none'
   }
 
   _defaultVisibleCount() {
@@ -271,117 +183,6 @@ export class CandlestickChart {
     this._positionGearMenu()
   }
 
-  async _loadMore(beforeDate) {
-    if (this._loading || !this._hasMore || !this._loadFn) return
-    this._loading = true
-    try {
-      const results = await this._loadFn(beforeDate)
-      if (!results || results.length === 0) {
-        this._hasMore = false
-        return
-      }
-      if (results.length < this._loadLimit) this._hasMore = false
-
-      if (!beforeDate) {
-        this._data = results.slice().reverse()
-        this._visibleCount = this._defaultVisibleCount()
-        this._startIndex = Math.max(0, this._data.length - this._visibleCount)
-      } else {
-        const added = results.slice().reverse()
-        this._startIndex += added.length
-        this._dragStartIndex += added.length
-        this._data = [...added, ...this._data]
-      }
-
-      if (this._data.length > 0) this._loadBeforeDate = this._data[0].date
-
-      this._render()
-    } finally {
-      this._loading = false
-    }
-  }
-
-  _checkLoadMore() {
-    if (!this._loadFn || this._loading || !this._hasMore) return
-    if (this._startIndex < this._loadThreshold) this._loadMore(this._loadBeforeDate)
-  }
-
-  _setupEvents() {
-    this._onWheel = (e) => {
-      e.preventDefault()
-      const delta = e.deltaY > 0 ? 3 : -3
-      this._visibleCount = Math.max(this._minVisible, Math.min(this._data.length, this._visibleCount + delta))
-      this._startIndex = Math.min(this._startIndex, this._data.length - this._visibleCount)
-      this._render()
-      this._checkLoadMore()
-    }
-
-    this._onMouseDown = (e) => {
-      this._isDragging = true
-      this._dragStartX = e.clientX
-      this._dragStartY = e.clientY
-      this._dragStartIndex = this._startIndex
-      this._dragStartMinP = this._minP
-      this._dragStartMaxP = this._maxP
-      this._canvas.style.cursor = 'grabbing'
-    }
-
-    this._onDocumentMove = (e) => {
-      if (!this._isDragging) return
-      const m = this._lastMargin || this._getMargin()
-      const chartW = this._width - m.left - m.right
-      const chartH = this._height - m.top - m.bottom
-      const candleW = chartW / this._visibleCount
-      const shift = Math.round((this._dragStartX - e.clientX) / candleW)
-      this._startIndex = Math.max(0, Math.min(this._data.length - this._visibleCount, this._dragStartIndex + shift))
-      if (!this._priceLocked) {
-        const range = this._dragStartMaxP - this._dragStartMinP
-        const vShift = (this._dragStartY - e.clientY) / chartH * range
-        this._frozenMinP = this._dragStartMinP - vShift
-        this._frozenMaxP = this._dragStartMaxP - vShift
-      }
-      this._render()
-      this._checkLoadMore()
-    }
-
-    this._onDocumentUp = () => {
-      if (!this._isDragging) return
-      this._isDragging = false
-      this._canvas.style.cursor = 'crosshair'
-      this._checkLoadMore()
-    }
-
-    this._onCanvasMove = (e) => {
-      if (this._isDragging) return
-      const rect = this._canvas.getBoundingClientRect()
-      this._mouseX = e.clientX - rect.left
-      this._mouseY = e.clientY - rect.top
-      this._render()
-      const m = this._lastMargin || this._getMargin()
-      const hit = getCandleAtX(e.clientX, this._canvas, m, this._width, this._visibleCount, this._startIndex, this._data)
-      if (hit) {
-        showTooltip(this._tooltipEl, hit.data, m, this._colors.text, this._fontSize())
-      } else {
-        hideTooltip(this._tooltipEl)
-      }
-    }
-
-    this._onCanvasLeave = () => {
-      hideTooltip(this._tooltipEl)
-      this._mouseX = null
-      this._mouseY = null
-      this._render()
-    }
-
-    this._canvas.addEventListener('wheel', this._onWheel, { passive: false })
-    this._canvas.addEventListener('mousedown', this._onMouseDown)
-    this._canvas.addEventListener('mousemove', this._onCanvasMove)
-    this._canvas.addEventListener('mouseleave', this._onCanvasLeave)
-    document.addEventListener('mousemove', this._onDocumentMove)
-    document.addEventListener('mouseup', this._onDocumentUp)
-    this._canvas.style.cursor = 'crosshair'
-  }
-
   _render() {
     if (!this._width || !this._data.length) return
 
@@ -440,56 +241,9 @@ export class CandlestickChart {
       this._drawCrosshair(chartW, chartH, m)
     }
   }
-
-  _drawCrosshair(chartW, chartH, m) {
-    const cx = this._mouseX, cy = this._mouseY
-    if (cx < m.left || cx > m.left + chartW || cy < m.top || cy > m.top + chartH) return
-
-    const ctx = this._ctx
-    const price = this._maxP - (cy - m.top) / chartH * (this._maxP - this._minP)
-    const candleIdx = Math.floor((cx - m.left) / (chartW / this._visibleCount)) + this._startIndex
-
-    ctx.save()
-    ctx.setLineDash([4, 4])
-    ctx.lineWidth = 1
-    ctx.strokeStyle = '#888'
-
-    ctx.beginPath()
-    ctx.moveTo(cx, m.top)
-    ctx.lineTo(cx, m.top + chartH)
-    ctx.stroke()
-
-    ctx.beginPath()
-    ctx.moveTo(m.left, cy)
-    ctx.lineTo(m.left + chartW, cy)
-    ctx.stroke()
-
-    ctx.setLineDash([])
-
-    ctx.font = 'bold ' + this._fontSize() + 'px "Terminal Grotesque", monospace'
-
-    const priceLabel = price.toFixed(2)
-    const pw = ctx.measureText(priceLabel).width + 4
-    let px = m.left + chartW - pw - 2
-    if (px < m.left) px = m.left + 2
-    const above = cy - m.top > 14
-    ctx.textAlign = 'left'
-    ctx.textBaseline = above ? 'bottom' : 'top'
-    ctx.fillStyle = this._colors.text
-    ctx.fillText(priceLabel, px, above ? cy - 2 : cy + 12)
-
-    if (candleIdx >= 0 && candleIdx < this._data.length) {
-      const d = new Date(this._data[candleIdx].date)
-      const dateLabel = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-      const dw = ctx.measureText(dateLabel).width + 4
-      let dx = cx - dw - 4
-      if (dx < m.left) dx = cx + 4
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'bottom'
-      ctx.fillStyle = this._colors.text
-      ctx.fillText(dateLabel, dx, m.top + chartH - 2)
-    }
-
-    ctx.restore()
-  }
 }
+
+Object.assign(CandlestickChart.prototype, gearMethods)
+Object.assign(CandlestickChart.prototype, eventsMethods)
+Object.assign(CandlestickChart.prototype, crosshairMethods)
+Object.assign(CandlestickChart.prototype, loaderMethods)
