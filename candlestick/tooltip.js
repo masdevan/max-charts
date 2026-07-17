@@ -1,7 +1,7 @@
 import { formatPrice } from './utils.js'
 
 const TOOLTIP_STYLE =
-  'position:absolute;pointer-events:none;color:#d0d0d0;' +
+  'position:absolute;pointer-events:none;color:#d0d0d0;background:transparent none;' +
   'font:9px/1.4 "Terminal Grotesque",monospace;display:none;z-index:1000;white-space:nowrap;'
 
 export function createTooltip(container) {
@@ -12,7 +12,7 @@ export function createTooltip(container) {
   return el
 }
 
-export function showTooltip(el, data, margin, textColor, fontSize) {
+export function showTooltip(el, data, margin, textColor, fontSize, topOffset = 0) {
   const isBullish = data.close >= data.open
   const arrow = isBullish ? '&#9650;' : '&#9660;'
   const color = isBullish ? '#26a69a' : '#ef5350'
@@ -29,9 +29,11 @@ export function showTooltip(el, data, margin, textColor, fontSize) {
     `<span style="color:${textColor};margin-left:5px">L <b>${fmt(data.low)}</b></span>` +
     `<span style="color:${color};margin-left:5px">C <b>${fmt(data.close)}</b></span>`
 
+  for (const child of el.querySelectorAll('*')) child.style.background = 'transparent'
+
   el.style.fontSize = fontSize + 'px'
-  el.style.left = (margin.left + 4) + 'px'
-  el.style.top = margin.top + 'px'
+  el.style.left = (margin.left + 3) + 'px'
+  el.style.top = (margin.top + topOffset) + 'px'
   el.style.display = 'block'
 }
 

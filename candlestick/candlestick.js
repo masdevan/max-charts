@@ -1,5 +1,7 @@
 import { drawGrid, drawCandlesticks, drawXAxis } from './renderer.js'
 import { createTooltip, showTooltip, hideTooltip, getCandleAtX } from './tooltip.js'
+import { createGearIcon } from '../icons/gear.js'
+import { formatPrice } from './utils.js'
 
 export class CandlestickChart {
   constructor(container, dataOrOptions = [], legacyOptions = {}) {
@@ -34,6 +36,9 @@ export class CandlestickChart {
       bg: '#ffffff',
       wick: '#333'
     }
+    this._priceLocked = true
+    this._frozenMinP = null
+    this._frozenMaxP = null
     this._isDragging = false
     this._mouseX = null
     this._mouseY = null
@@ -46,7 +51,7 @@ export class CandlestickChart {
       top: Math.max(6, Math.min(20, h * 0.05)),
       bottom: Math.max(10, Math.min(30, h * 0.08)),
       left: Math.max(35, Math.min(65, w * 0.1)),
-      right: Math.max(5, Math.min(20, w * 0.03))
+      right: Math.max(8, Math.min(23, w * 0.03 + 3))
     }
   }
 
@@ -86,6 +91,97 @@ export class CandlestickChart {
     this._colors.bg = '#ffffff'
   }
 
+  _toggleLock() {
+    this._priceLocked = !this._priceLocked
+    if (!this._priceLocked) {
+      this._frozenMinP = this._minP
+      this._frozenMaxP = this._maxP
+    }
+    this._updateGearMenu()
+    this._render()
+  }
+
+  _setupGearMenu() {
+    this._modalOpen = false
+
+    this._gearBtn = document.createElement('button')
+    this._gearBtn.appendChild(createGearIcon(this._colors.text))
+    this._gearBtn.style.cssText =
+      'position:absolute;cursor:pointer;z-index:3;' +
+      'background:none;border:none;padding:2px;display:flex;align-items:center;justify-content:center'
+
+    this._modal = document.createElement('div')
+    this._modal.style.cssText = 'position:absolute;z-index:3;display:none;' +
+      'background:' + this._colors.bg + ';border:1px solid ' + this._colors.grid + ';' +
+      'border-radius:0;padding:4px 0;' +
+      'font-family:"Terminal Grotesque",monospace;font-size:11px;min-width:100px'
+
+    this._modalAuto = document.createElement('div')
+    this._modalAuto.textContent = 'Chart Auto'
+    this._modalAuto.style.cssText = 'padding:4px 10px;cursor:pointer;color:' + this._colors.text
+    this._modalAuto.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (!this._priceLocked) this._toggleLock()
+      this._hideModal()
+    })
+
+    this._modalFixed = document.createElement('div')
+    this._modalFixed.textContent = 'Chart Fixed'
+    this._modalFixed.style.cssText = 'padding:4px 10px;cursor:pointer;color:' + this._colors.text
+    this._modalFixed.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (this._priceLocked) this._toggleLock()
+      this._hideModal()
+    })
+
+    this._modal.appendChild(this._modalAuto)
+    this._modal.appendChild(this._modalFixed)
+
+    this._onGearClick = (e) => {
+      e.stopPropagation()
+      this._toggleModal()
+    }
+    this._gearBtn.addEventListener('click', this._onGearClick)
+
+    this._onDocClick = (e) => {
+      if (this._modalOpen && !this._modal.contains(e.target) && e.target !== this._gearBtn) {
+        this._hideModal()
+      }
+    }
+    document.addEventListener('click', this._onDocClick)
+
+    this._wrapper.appendChild(this._gearBtn)
+    this._wrapper.appendChild(this._modal)
+  }
+
+  _updateGearMenu() {
+    const active = this._colors.grid
+    const inactive = this._colors.bg
+    this._modalAuto.style.background = this._priceLocked ? active : inactive
+    this._modalFixed.style.background = this._priceLocked ? inactive : active
+  }
+
+  _positionGearMenu() {
+    if (!this._modal) return
+    const m = this._getMargin()
+    const sz = this._gearBtn.offsetHeight || 20
+    this._gearBtn.style.bottom = Math.max(4, m.bottom - sz + 18) + 'px'
+    this._gearBtn.style.right = Math.max(0, m.right - sz - 5) + 'px'
+    this._modal.style.bottom = m.bottom + 'px'
+    this._modal.style.right = m.right + 'px'
+  }
+
+  _toggleModal() {
+    this._modalOpen = !this._modalOpen
+    this._modal.style.display = this._modalOpen ? 'block' : 'none'
+    if (this._modalOpen) this._updateGearMenu()
+  }
+
+  _hideModal() {
+    this._modalOpen = false
+    this._modal.style.display = 'none'
+  }
+
   _defaultVisibleCount() {
     if (!this._width) return Math.min(this._data.length || 100, 100)
     const m = this._getMargin()
@@ -111,34 +207,48 @@ export class CandlestickChart {
 
   destroy() {
     this._resizeObserver?.disconnect()
+    this._gearBtn?.removeEventListener('click', this._onGearClick)
+    document.removeEventListener('click', this._onDocClick)
     this._canvas.removeEventListener('wheel', this._onWheel)
     this._canvas.removeEventListener('mousedown', this._onMouseDown)
     this._canvas.removeEventListener('mousemove', this._onCanvasMove)
     this._canvas.removeEventListener('mouseleave', this._onCanvasLeave)
     document.removeEventListener('mousemove', this._onDocumentMove)
     document.removeEventListener('mouseup', this._onDocumentUp)
-    this._container.removeChild(this._canvas)
-    this._container.removeChild(this._tooltipEl)
+    this._wrapper.removeChild(this._gearBtn)
+    this._wrapper.removeChild(this._modal)
+    this._wrapper.removeChild(this._canvas)
+    this._wrapper.removeChild(this._tooltipEl)
+    this._container.removeChild(this._wrapper)
   }
 
   _init() {
+    this._wrapper = document.createElement('div')
+    const ws = this._customW && this._customH
+      ? `position:relative;display:flex;flex-direction:column;width:${this._customW}px;height:${this._customH}px`
+      : 'position:relative;display:flex;flex-direction:column;width:100%;height:100%'
+    this._wrapper.style.cssText = ws
+    this._container.appendChild(this._wrapper)
+
+    this._loadFont()
+    this._detectTheme()
+
+    this._setupGearMenu()
+
     this._canvas = document.createElement('canvas')
-    const size = this._customW && this._customH ? `width:${this._customW}px;height:${this._customH}px` : 'width:100%;height:100%'
-    this._canvas.style.cssText = `display:block;${size}`
-    this._container.appendChild(this._canvas)
+    this._canvas.style.cssText = 'display:block;width:100%;flex:1;min-height:0'
+    this._wrapper.appendChild(this._canvas)
     this._ctx = this._canvas.getContext('2d')
 
-    this._tooltipEl = createTooltip(this._container)
+    this._tooltipEl = createTooltip(this._wrapper)
 
     if (window.ResizeObserver) {
       this._resizeObserver = new ResizeObserver(() => this._resize())
-      this._resizeObserver.observe(this._container)
+      this._resizeObserver.observe(this._wrapper)
     } else {
       window.addEventListener('resize', () => this._resize())
     }
 
-    this._loadFont()
-    this._detectTheme()
     this._setupEvents()
     this._resize()
 
@@ -150,15 +260,15 @@ export class CandlestickChart {
   }
 
   _resize() {
-    const w = this._customW || this._container.getBoundingClientRect().width
-    const h = this._customH || this._container.getBoundingClientRect().height
+    const rect = this._canvas.getBoundingClientRect()
     const dpr = window.devicePixelRatio || 1
-    this._canvas.width = w * dpr
-    this._canvas.height = h * dpr
+    this._canvas.width = rect.width * dpr
+    this._canvas.height = rect.height * dpr
     this._ctx.scale(dpr, dpr)
-    this._width = w
-    this._height = h
+    this._width = rect.width
+    this._height = rect.height
     this._render()
+    this._positionGearMenu()
   }
 
   async _loadMore(beforeDate) {
@@ -209,17 +319,27 @@ export class CandlestickChart {
     this._onMouseDown = (e) => {
       this._isDragging = true
       this._dragStartX = e.clientX
+      this._dragStartY = e.clientY
       this._dragStartIndex = this._startIndex
+      this._dragStartMinP = this._minP
+      this._dragStartMaxP = this._maxP
       this._canvas.style.cursor = 'grabbing'
     }
 
     this._onDocumentMove = (e) => {
       if (!this._isDragging) return
-      const m = this._getMargin()
+      const m = this._lastMargin || this._getMargin()
       const chartW = this._width - m.left - m.right
+      const chartH = this._height - m.top - m.bottom
       const candleW = chartW / this._visibleCount
       const shift = Math.round((this._dragStartX - e.clientX) / candleW)
       this._startIndex = Math.max(0, Math.min(this._data.length - this._visibleCount, this._dragStartIndex + shift))
+      if (!this._priceLocked) {
+        const range = this._dragStartMaxP - this._dragStartMinP
+        const vShift = (this._dragStartY - e.clientY) / chartH * range
+        this._frozenMinP = this._dragStartMinP - vShift
+        this._frozenMaxP = this._dragStartMaxP - vShift
+      }
       this._render()
       this._checkLoadMore()
     }
@@ -237,7 +357,7 @@ export class CandlestickChart {
       this._mouseX = e.clientX - rect.left
       this._mouseY = e.clientY - rect.top
       this._render()
-      const m = this._getMargin()
+      const m = this._lastMargin || this._getMargin()
       const hit = getCandleAtX(e.clientX, this._canvas, m, this._width, this._visibleCount, this._startIndex, this._data)
       if (hit) {
         showTooltip(this._tooltipEl, hit.data, m, this._colors.text, this._fontSize())
@@ -268,23 +388,35 @@ export class CandlestickChart {
     const ctx = this._ctx
     const m = this._getMargin()
     const fs = this._fontSize()
-    const chartW = this._width - m.left - m.right
-    const chartH = this._height - m.top - m.bottom
-    if (chartW <= 0 || chartH <= 0) return
 
     const endIdx = Math.ceil(Math.min(this._startIndex + this._visibleCount, this._data.length))
     const startIdx = Math.floor(this._startIndex)
     const visibleData = this._data.slice(startIdx, endIdx)
     if (!visibleData.length) return
 
-    let minP = Infinity, maxP = -Infinity
-    for (const d of visibleData) {
-      if (d.low < minP) minP = d.low
-      if (d.high > maxP) maxP = d.high
+    let minP, maxP
+    if (this._priceLocked) {
+      minP = Infinity; maxP = -Infinity
+      for (const d of visibleData) {
+        if (d.low < minP) minP = d.low
+        if (d.high > maxP) maxP = d.high
+      }
+      const pad = (maxP - minP) * 0.05 || 1
+      minP -= pad; maxP += pad
+      this._frozenMinP = minP; this._frozenMaxP = maxP
+    } else {
+      minP = this._frozenMinP; maxP = this._frozenMaxP
     }
-    const pad = (maxP - minP) * 0.05 || 1
-    minP -= pad; maxP += pad
     this._minP = minP; this._maxP = maxP
+
+    ctx.font = fs + 'px "Terminal Grotesque", monospace'
+    const pw = Math.max(ctx.measureText(formatPrice(maxP)).width, ctx.measureText(formatPrice(minP)).width)
+    m.left = Math.max(pw + 11, 33)
+    this._lastMargin = { ...m }
+
+    const chartW = this._width - m.left - m.right
+    const chartH = this._height - m.top - m.bottom
+    if (chartW <= 0 || chartH <= 0) return
 
     const yPos = (price) => m.top + chartH - (price - minP) / (maxP - minP) * chartH
 
@@ -292,7 +424,12 @@ export class CandlestickChart {
     ctx.fillRect(0, 0, this._width, this._height)
 
     drawGrid(ctx, chartW, chartH, m.left, m.top, minP, maxP, yPos, this._colors, fs)
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(m.left, m.top, chartW, chartH)
+    ctx.clip()
     drawCandlesticks(ctx, visibleData, startIdx, m.left, chartW, chartH, m.top, yPos, this._visibleCount, this._colors)
+    ctx.restore()
     drawXAxis(ctx, visibleData, startIdx, m.left, chartW, m.top, chartH, this._visibleCount, this._colors, fs)
 
     ctx.strokeStyle = this._colors.grid
