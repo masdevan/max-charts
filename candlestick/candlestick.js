@@ -28,6 +28,7 @@ export class CandlestickChart {
       this._customH = opts.height || null
     }
 
+    this._decimals = null
     this._startIndex = 0
     this._visibleCount = 30
     this._minVisible = 5
@@ -101,7 +102,7 @@ export class CandlestickChart {
   }
 
   _detectDecimals() {
-    let d = 2
+    let d = 0
     const sample = this._data.slice(0, 50)
     for (const p of sample) {
       for (const key of ['open', 'high', 'low', 'close']) {
@@ -121,6 +122,7 @@ export class CandlestickChart {
   }
 
   setData(data) {
+    this._detectDecimals()
     if (this._loadFn) {
       this._data = []
       this._loading = false
@@ -131,7 +133,6 @@ export class CandlestickChart {
       return
     }
     this._data = data || []
-    this._detectDecimals()
     this._visibleCount = this._defaultVisibleCount()
     this._startIndex = Math.max(0, this._data.length - this._visibleCount)
     this._render()
