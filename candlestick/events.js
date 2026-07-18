@@ -8,9 +8,6 @@ export default {
       const step = delta > 0 ? 3 : -3
       this._visibleCount = Math.max(this._minVisible, Math.min(this._data.length, this._visibleCount + step))
       this._startIndex = Math.max(0, this._startIndex)
-      if (this._priceLocked) {
-        this._startIndex = Math.min(this._startIndex, this._data.length - this._visibleCount)
-      }
       this._render()
       this._checkLoadMore()
     }
@@ -68,15 +65,10 @@ export default {
         const factor = (this._dragStartX - e.clientX) / chartW
         this._visibleCount = Math.max(this._minVisible, Math.min(this._data.length, Math.round(this._dragStartVisibleCount * (1 + factor))))
         this._startIndex = Math.max(0, this._startIndex)
-        if (this._priceLocked) {
-          this._startIndex = Math.min(this._startIndex, this._data.length - this._visibleCount)
-        }
       } else {
         const candleW = chartW / this._visibleCount
         const shift = Math.round((this._dragStartX - e.clientX) / candleW)
-        this._startIndex = this._priceLocked
-          ? Math.max(0, Math.min(this._data.length - this._visibleCount, this._dragStartIndex + shift))
-          : Math.max(0, this._dragStartIndex + shift)
+        this._startIndex = Math.max(0, this._dragStartIndex + shift)
         if (!this._priceLocked) {
           const range = this._dragStartMaxP - this._dragStartMinP
           const vShift = (this._dragStartY - e.clientY) / chartH * range
