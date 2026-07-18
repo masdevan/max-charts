@@ -66,6 +66,14 @@ export function drawCandlesticks(ctx, visibleData, startIdx, left, chartW, chart
   }
 }
 
+function formatDateLabel(dt, totalMs) {
+  const day = 86400000
+  if (totalMs >= 365 * day) return dt.getFullYear().toString()
+  if (totalMs >= 30 * day) return dt.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
+  if (totalMs >= 2 * day) return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  return dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+}
+
 export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibleCount, colors, fontSize, decimals) {
   const step = Math.max(1, Math.floor(visibleCount / 6))
   ctx.textAlign = 'center'
@@ -80,6 +88,7 @@ export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibl
     for (let i = first + 1; i <= last; i++) total += new Date(data[i].date).getTime() - new Date(data[i - 1].date).getTime()
     avgMs = total / (last - first)
   }
+  const totalMs = avgMs * visibleCount
 
   ctx.save()
   ctx.setLineDash([3, 3])
@@ -109,7 +118,7 @@ export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibl
     } else {
       continue
     }
-    const label = dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    const label = formatDateLabel(dt, totalMs)
     const tw = ctx.measureText(label).width
     const pad = 3
     const bx = x - tw / 2 - pad
