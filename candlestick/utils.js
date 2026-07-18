@@ -8,8 +8,9 @@ export function niceStep(range) {
   return 10 * mag
 }
 
-export function formatPrice(p) {
-  if (p >= 1000) return p.toFixed(0)
+export function formatPrice(p, decimals) {
+  if (decimals != null) return p.toFixed(decimals)
+  if (p >= 1000) return p.toFixed(2)
   if (p >= 1) return p.toFixed(2)
   return p.toFixed(4)
 }

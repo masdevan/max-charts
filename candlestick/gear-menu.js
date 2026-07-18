@@ -23,8 +23,8 @@ export default {
 
     this._modal = document.createElement('div')
     this._modal.style.cssText = 'position:absolute;z-index:3;display:none;' +
-      'background:' + c.bg + ';border:1px solid ' + c.grid + ';' +
-      'border-radius:0;padding:4px 0;' +
+      'background:' + c.bg + ';border:1px solid ' + c.grid + ';border-width:1px 0 0 1px;' +
+      'padding:4px 0;' +
       'font-family:"Terminal Grotesque",monospace;font-size:11px;min-width:100px'
 
     this._modalAuto = document.createElement('div')
@@ -38,7 +38,7 @@ export default {
 
     this._modalFixed = document.createElement('div')
     this._modalFixed.textContent = 'Chart Fixed'
-    this._modalFixed.style.cssText = 'padding:4px 10px;cursor:pointer;color:' + c.text
+    this._modalFixed.style.cssText = 'padding:4px 10px;margin-top:4px;cursor:pointer;color:' + c.text
     this._modalFixed.addEventListener('click', (e) => {
       e.stopPropagation()
       if (this._priceLocked) this._toggleLock()
@@ -63,6 +63,10 @@ export default {
 
     this._wrapper.appendChild(this._gearBtn)
     this._wrapper.appendChild(this._modal)
+
+    this._modal.style.display = 'block'
+    this._modalHeight = this._modal.offsetHeight
+    this._modal.style.display = 'none'
   },
 
   _updateGearMenu() {
@@ -74,18 +78,20 @@ export default {
 
   _positionGearMenu() {
     if (!this._modal) return
-    const m = this._getMargin()
-    const sz = this._gearBtn.offsetHeight || 20
-    this._gearBtn.style.bottom = Math.max(4, m.bottom - sz + 18) + 'px'
-    this._gearBtn.style.right = Math.max(0, m.right - sz - 5) + 'px'
-    this._modal.style.bottom = m.bottom + 'px'
+    this._gearBtn.style.bottom = '4px'
+    this._gearBtn.style.right = '6px'
+    const m = this._lastMargin || this._getMargin()
+    this._modal.style.bottom = (m.bottom + 0.5) + 'px'
     this._modal.style.right = m.right + 'px'
   },
 
   _toggleModal() {
     this._modalOpen = !this._modalOpen
     this._modal.style.display = this._modalOpen ? 'block' : 'none'
-    if (this._modalOpen) this._updateGearMenu()
+    if (this._modalOpen) {
+      this._updateGearMenu()
+      this._positionGearMenu()
+    }
   },
 
   _hideModal() {

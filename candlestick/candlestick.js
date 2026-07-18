@@ -37,6 +37,7 @@ export class CandlestickChart {
       grid: '#e0e0e0',
       text: '#666',
       bg: '#ffffff',
+      labelBg: '#e8e8e8',
       wick: '#333'
     }
     this._priceLocked = true
@@ -53,10 +54,10 @@ export class CandlestickChart {
   _getMargin() {
     const w = this._width || 800, h = this._height || 500
     return {
-      top: Math.max(6, Math.min(20, h * 0.05)),
+      top: Math.max(2, Math.min(12, h * 0.025)),
       bottom: Math.max(10, Math.min(30, h * 0.08)),
-      left: Math.max(35, Math.min(65, w * 0.1)),
-      right: Math.max(8, Math.min(23, w * 0.03 + 3))
+      left: 10,
+      right: Math.max(4, Math.min(12, w * 0.02))
     }
   }
 
@@ -83,7 +84,10 @@ export class CandlestickChart {
         if (rgb) {
           const r = +rgb[0], g = +rgb[1], b = +rgb[2]
           this._colors.bg = bg
-          if (r * 0.299 + g * 0.587 + b * 0.114 < 128) {
+          const isDark = r * 0.299 + g * 0.587 + b * 0.114 < 128
+          const amt = isDark ? 25 : -25
+          this._colors.labelBg = `rgb(${Math.max(0,Math.min(255,r+amt))},${Math.max(0,Math.min(255,g+amt))},${Math.max(0,Math.min(255,b+amt))})`
+          if (isDark) {
             this._colors.grid = `rgb(${Math.min(255,r+30)},${Math.min(255,g+30)},${Math.min(255,b+30)})`
             this._colors.text = `rgb(${Math.min(255,r+80)},${Math.min(255,g+80)},${Math.min(255,b+80)})`
             this._colors.wick = `rgb(${Math.min(255,r+60)},${Math.min(255,g+60)},${Math.min(255,b+60)})`
@@ -94,6 +98,19 @@ export class CandlestickChart {
       el = el.parentElement
     }
     this._colors.bg = '#ffffff'
+  }
+
+  _detectDecimals() {
+    let d = 2
+    const sample = this._data.slice(0, 50)
+    for (const p of sample) {
+      for (const key of ['open', 'high', 'low', 'close']) {
+        const s = String(p[key])
+        const dot = s.indexOf('.')
+        if (dot !== -1) d = Math.max(d, s.length - dot - 1)
+      }
+    }
+    this._decimals = d
   }
 
   _defaultVisibleCount() {
@@ -114,6 +131,7 @@ export class CandlestickChart {
       return
     }
     this._data = data || []
+    this._detectDecimals()
     this._visibleCount = this._defaultVisibleCount()
     this._startIndex = Math.max(0, this._data.length - this._visibleCount)
     this._render()
@@ -217,8 +235,8 @@ export class CandlestickChart {
     }
 
     ctx.font = fs + 'px "Terminal Grotesque", monospace'
-    const pw = Math.max(ctx.measureText(formatPrice(maxP)).width, ctx.measureText(formatPrice(minP)).width)
-    m.left = Math.max(pw + 11, 33)
+    const pw = Math.max(ctx.measureText(formatPrice(maxP, this._decimals)).width, ctx.measureText(formatPrice(minP, this._decimals)).width)
+    m.right = Math.max(pw + 6, this._lastMargin ? this._lastMargin.right : m.right)
     this._lastMargin = { ...m }
 
     const chartW = this._width - m.left - m.right
@@ -230,7 +248,7 @@ export class CandlestickChart {
     ctx.fillStyle = this._colors.bg
     ctx.fillRect(0, 0, this._width, this._height)
 
-    drawGrid(ctx, chartW, chartH, m.left, m.top, minP, maxP, yPos, this._colors, fs)
+    drawGrid(ctx, chartW, chartH, m.left, m.top, minP, maxP, yPos, this._colors, fs, this._decimals)
     ctx.save()
     ctx.beginPath()
     ctx.rect(m.left, m.top, chartW, chartH)
@@ -239,7 +257,7 @@ export class CandlestickChart {
       drawCandlesticks(ctx, visibleData, startIdx, m.left, chartW, chartH, m.top, yPos, this._visibleCount, this._colors)
     }
     ctx.restore()
-    drawXAxis(ctx, this._data, startIdx, m.left, chartW, m.top, chartH, this._visibleCount, this._colors, fs)
+    drawXAxis(ctx, this._data, startIdx, m.left, chartW, m.top, chartH, this._visibleCount, this._colors, fs, this._decimals)
 
     ctx.strokeStyle = this._colors.grid
     ctx.lineWidth = 1

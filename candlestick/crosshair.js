@@ -25,27 +25,32 @@ export default {
     ctx.setLineDash([])
 
     ctx.font = 'bold ' + this._fontSize() + 'px "Terminal Grotesque", monospace'
+    const fs = this._fontSize()
 
-    const priceLabel = price.toFixed(2)
-    const pw = ctx.measureText(priceLabel).width + 4
-    let px = m.left + chartW - pw - 2
-    if (px < m.left) px = m.left + 2
-    const above = cy - m.top > 14
-    ctx.textAlign = 'left'
-    ctx.textBaseline = above ? 'bottom' : 'top'
+    const priceLabel = price.toFixed(this._decimals || 2)
+    const pw = ctx.measureText(priceLabel).width
+    const pad = 3
+    const px = m.left + chartW + 1
+    ctx.fillStyle = this._colors.labelBg
+    ctx.fillRect(px, cy - fs / 2 - pad, pw + pad * 2, fs + pad * 2)
     ctx.fillStyle = this._colors.text
-    ctx.fillText(priceLabel, px, above ? cy - 2 : cy + 12)
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(priceLabel, px + pad, cy)
 
     if (candleIdx >= 0 && candleIdx < this._data.length) {
       const d = new Date(this._data[candleIdx].date)
       const dateLabel = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-      const dw = ctx.measureText(dateLabel).width + 4
-      let dx = cx - dw - 4
-      if (dx < m.left) dx = cx + 4
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'bottom'
+      const dw = ctx.measureText(dateLabel).width
+      const pad = 3
+      const bgX = cx - dw / 2 - pad
+      const bgY = m.top + chartH + 1
+      ctx.fillStyle = this._colors.labelBg
+      ctx.fillRect(bgX, bgY, dw + pad * 2, fs + pad * 2)
       ctx.fillStyle = this._colors.text
-      ctx.fillText(dateLabel, dx, m.top + chartH - 2)
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'top'
+      ctx.fillText(dateLabel, cx, bgY + pad)
     }
 
     ctx.restore()

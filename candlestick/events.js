@@ -20,9 +20,10 @@ export default {
       const cx = e.clientX - rect.left
       const cy = e.clientY - rect.top
       const m = this._lastMargin || this._getMargin()
+      const chartW = this._width - m.left - m.right
       const chartH = this._height - m.top - m.bottom
 
-      if (cx >= 0 && cx < m.left && cy >= m.top && cy <= m.top + chartH) {
+      if (cx > m.left + chartW && cx <= m.left + chartW + m.right && cy >= m.top && cy <= m.top + chartH) {
         this._priceDragging = true
         this._dragStartY = e.clientY
         this._dragStartMinP = this._minP
@@ -107,8 +108,9 @@ export default {
       this._mouseY = e.clientY - rect.top
       const m = this._lastMargin || this._getMargin()
       const cx = this._mouseX, cy = this._mouseY
+      const chartW = this._width - m.left - m.right
       const chartH = this._height - m.top - m.bottom
-      if (cx >= 0 && cx < m.left && cy >= m.top && cy <= m.top + chartH) {
+      if (cx > m.left + chartW && cx <= m.left + chartW + m.right && cy >= m.top && cy <= m.top + chartH) {
         this._canvas.style.cursor = 'row-resize'
       } else if (cy > m.top + chartH && cy <= m.top + chartH + m.bottom && cx >= m.left && cx <= m.left + (this._width - m.left - m.right)) {
         this._canvas.style.cursor = 'col-resize'

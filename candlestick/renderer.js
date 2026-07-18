@@ -1,33 +1,43 @@
 import { niceStep, formatPrice } from './utils.js'
 
-export function drawGrid(ctx, chartW, chartH, left, top, minP, maxP, yPos, colors, fontSize) {
+export function drawGrid(ctx, chartW, chartH, left, top, minP, maxP, yPos, colors, fontSize, decimals) {
   const range = maxP - minP
   const step = niceStep(range)
   const niceMin = Math.floor(minP / step) * step
   const niceMax = Math.ceil(maxP / step) * step
 
-  ctx.textAlign = 'right'
   ctx.textBaseline = 'middle'
   ctx.font = fontSize + 'px "Terminal Grotesque", monospace'
-  ctx.globalAlpha = 0.25
 
+  ctx.save()
+  ctx.setLineDash([3, 3])
+  ctx.lineWidth = 1
+  ctx.globalAlpha = 0.25
+  ctx.strokeStyle = colors.grid
   for (let p = niceMin; p <= niceMax + step * 0.5; p += step) {
     const y = yPos(p)
     if (y < top || y > top + chartH) continue
-    ctx.strokeStyle = colors.grid
-    ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(left, y)
     ctx.lineTo(left + chartW, y)
     ctx.stroke()
   }
+  ctx.restore()
 
   ctx.globalAlpha = 1
-  ctx.fillStyle = colors.text
+  ctx.textAlign = 'left'
   for (let p = niceMin; p <= niceMax + step * 0.5; p += step) {
     const y = yPos(p)
     if (y < top || y > top + chartH) continue
-    ctx.fillText(formatPrice(p), left - 6, y)
+    const label = formatPrice(p, decimals)
+    const tw = ctx.measureText(label).width
+    const pad = 3
+    const bx = left + chartW
+    const by = y - fontSize / 2 - pad
+    ctx.fillStyle = colors.bg
+    ctx.fillRect(bx, by, tw + pad * 2, fontSize + pad * 2)
+    ctx.fillStyle = colors.text
+    ctx.fillText(label, bx + pad, y)
   }
 }
 
@@ -56,13 +66,12 @@ export function drawCandlesticks(ctx, visibleData, startIdx, left, chartW, chart
   }
 }
 
-export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibleCount, colors, fontSize) {
+export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibleCount, colors, fontSize, decimals) {
   const step = Math.max(1, Math.floor(visibleCount / 6))
   ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
+  ctx.textBaseline = 'top'
   ctx.font = fontSize + 'px "Terminal Grotesque", monospace'
 
-  // estimate interval from actual data
   let avgMs = 86400000
   const last = Math.min(startIdx + visibleCount, data.length - 1)
   const first = Math.max(0, last - 5)
@@ -72,16 +81,19 @@ export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibl
     avgMs = total / (last - first)
   }
 
+  ctx.save()
+  ctx.setLineDash([3, 3])
+  ctx.lineWidth = 1
   ctx.globalAlpha = 0.25
+  ctx.strokeStyle = colors.grid
   for (let i = 0; i < visibleCount; i += step) {
     const x = left + i * (chartW / visibleCount) + (chartW / visibleCount) / 2
-    ctx.strokeStyle = colors.grid
-    ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(x, top)
     ctx.lineTo(x, top + chartH)
     ctx.stroke()
   }
+  ctx.restore()
 
   ctx.globalAlpha = 1
   for (let i = 0; i < visibleCount; i += step) {
@@ -97,7 +109,14 @@ export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibl
     } else {
       continue
     }
+    const label = dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    const tw = ctx.measureText(label).width
+    const pad = 3
+    const bx = x - tw / 2 - pad
+    const by = top + chartH
+    ctx.fillStyle = colors.bg
+    ctx.fillRect(bx, by, tw + pad * 2, fontSize + pad * 2)
     ctx.fillStyle = colors.text
-    ctx.fillText(dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), x, top + chartH + fontSize + 4)
+    ctx.fillText(label, x, by + pad)
   }
 }

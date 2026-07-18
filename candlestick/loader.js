@@ -12,6 +12,7 @@ export default {
 
       if (!beforeDate) {
         this._data = results.slice().reverse()
+        this._detectDecimals()
         this._visibleCount = this._defaultVisibleCount()
         this._startIndex = Math.max(0, this._data.length - this._visibleCount)
       } else {
@@ -19,6 +20,7 @@ export default {
         this._startIndex += added.length
         this._dragStartIndex += added.length
         this._data = [...added, ...this._data]
+        this._detectDecimals()
       }
 
       if (this._data.length > 0) this._loadBeforeDate = this._data[0].date
