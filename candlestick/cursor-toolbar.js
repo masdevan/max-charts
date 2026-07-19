@@ -10,7 +10,7 @@ function darken(rgb, amt) {
 
 export default {
   _setupCursorToolbar() {
-    this._cursorMode = false
+    this._cursorMode = true
     this._toolbarOpen = false
     this._hoverReady = true
     const c = this._colors
@@ -29,7 +29,8 @@ export default {
     const crosshairIcon = createCrosshairIcon(c.text)
     crosshairIcon.style.background = 'inherit'
     this._crosshairBtnIcon = crosshairIcon
-    this._cursorBtn.appendChild(this._crosshairBtnIcon)
+    this._cursorBtn.appendChild(this._cursorBtnIcon)
+    this._cursorBtn.style.background = c.grid
     this._cursorBtn.title = 'Cursor'
 
     this._chevronBtn = document.createElement('button')
@@ -120,10 +121,9 @@ export default {
 
     this._updatePopupActive()
 
-    this._cursorBtn.addEventListener('click', (e) => {
+    this._cursorBtn.addEventListener('dblclick', (e) => {
       e.stopPropagation()
-      this._setCursorMode(true)
-      this._hideToolbarPopup()
+      this._toggleToolbarPopup()
     })
 
     this._chevronBtn.addEventListener('click', (e) => {
@@ -166,16 +166,15 @@ export default {
   },
 
   _toggleToolbarPopup() {
-    this._toolbarOpen = !this._toolbarOpen
-    this._toolbarPopup.style.display = this._toolbarOpen ? 'block' : 'none'
-    if (this._toolbarOpen) {
-      this._hoverReady = false
-      setTimeout(() => { this._hoverReady = true }, 100)
-      this._chevronBtn.style.background = darken(this._colors.grid, 15)
-      this._chevronBtn.style.opacity = '1'
-      this._cursorBtn.style.background = this._colors.grid
-      this._updatePopupActive()
-    }
+    if (this._toolbarOpen) { this._hideToolbarPopup(); return }
+    this._toolbarOpen = true
+    this._toolbarPopup.style.display = 'block'
+    this._hoverReady = false
+    setTimeout(() => { this._hoverReady = true }, 100)
+    this._chevronBtn.style.background = darken(this._colors.grid, 15)
+    this._chevronBtn.style.opacity = '1'
+    this._cursorBtn.style.background = this._colors.grid
+    this._updatePopupActive()
   },
 
   _hideToolbarPopup() {
