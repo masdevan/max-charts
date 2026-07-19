@@ -76,12 +76,15 @@ function formatDateLabel(dt, totalMs) {
 
 export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibleCount, colors, fontSize, decimals) {
   const step = Math.max(1, Math.floor(visibleCount / 14))
+  const firstIdx = Math.ceil(startIdx / step) * step
+  const lastIdx = startIdx + visibleCount
+  const candleW = chartW / visibleCount
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
   ctx.font = fontSize + 'px "Terminal Grotesque", monospace'
 
   let avgMs = 86400000
-  const last = Math.min(startIdx + visibleCount, data.length - 1)
+  const last = Math.min(lastIdx, data.length - 1)
   const first = Math.max(0, last - 5)
   if (last - first >= 2) {
     let total = 0
@@ -95,8 +98,8 @@ export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibl
   ctx.lineWidth = 1
   ctx.globalAlpha = 0.25
   ctx.strokeStyle = colors.grid
-  for (let i = 0; i < visibleCount; i += step) {
-    const x = left + i * (chartW / visibleCount) + (chartW / visibleCount) / 2
+  for (let idx = firstIdx; idx < lastIdx; idx += step) {
+    const x = left + (idx - startIdx) * candleW + candleW / 2
     ctx.beginPath()
     ctx.moveTo(x, top)
     ctx.lineTo(x, top + chartH)
@@ -105,9 +108,8 @@ export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibl
   ctx.restore()
 
   ctx.globalAlpha = 1
-  for (let i = 0; i < visibleCount; i += step) {
-    const idx = startIdx + i
-    const x = left + i * (chartW / visibleCount) + (chartW / visibleCount) / 2
+  for (let idx = firstIdx; idx < lastIdx; idx += step) {
+    const x = left + (idx - startIdx) * candleW + candleW / 2
     let dt
     if (idx >= 0 && idx < data.length) {
       dt = new Date(data[idx].date)
