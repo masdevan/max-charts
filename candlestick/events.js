@@ -5,11 +5,16 @@ export default {
     this._onWheel = (e) => {
       e.preventDefault()
       const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
-      const step = delta > 0 ? 3 : -3
+      const step = (delta > 0 ? 1 : -1) * Math.max(3, Math.round(this._visibleCount * 0.05))
       this._visibleCount = Math.max(this._minVisible, Math.min(this._data.length, this._visibleCount + step))
       this._startIndex = Math.max(0, this._startIndex)
-      this._render()
-      this._checkLoadMore()
+      if (!this._rafWheel) {
+        this._rafWheel = requestAnimationFrame(() => {
+          this._rafWheel = null
+          this._render()
+          this._checkLoadMore()
+        })
+      }
     }
 
     this._onMouseDown = (e) => {
@@ -109,12 +114,17 @@ export default {
       } else {
         this._canvas.style.cursor = 'crosshair'
       }
-      this._render()
       const hit = getCandleAtX(e.clientX, this._canvas, m, this._width, this._visibleCount, this._startIndex, this._data)
       if (hit) {
         showTooltip(this._tooltipEl, hit.data, m, this._colors.text, this._fontSize())
       } else {
         hideTooltip(this._tooltipEl)
+      }
+      if (!this._rafMove) {
+        this._rafMove = requestAnimationFrame(() => {
+          this._rafMove = null
+          this._render()
+        })
       }
     }
 
