@@ -19,7 +19,9 @@ export default {
     const c = this._colors
 
     this._gearBtn = document.createElement('button')
-    this._gearBtn.appendChild(createGearIcon(c.text))
+    const gearIcon = createGearIcon(c.text)
+    gearIcon.style.background = 'inherit'
+    this._gearBtn.appendChild(gearIcon)
     this._gearBtn.style.cssText =
       'position:absolute;cursor:pointer;z-index:3;' +
       'background:none;border:none;padding:2px;display:flex;align-items:center;justify-content:center'
@@ -73,8 +75,8 @@ export default {
     }
     document.addEventListener('click', this._onDocClick)
 
-    this._wrapper.appendChild(this._gearBtn)
-    this._wrapper.appendChild(this._modal)
+    this._chartArea.appendChild(this._gearBtn)
+    this._chartArea.appendChild(this._modal)
 
     this._modal.style.display = 'block'
     this._modalHeight = this._modal.offsetHeight

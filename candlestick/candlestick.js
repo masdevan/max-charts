@@ -5,6 +5,7 @@ import gearMethods from './gear-menu.js'
 import eventsMethods from './events.js'
 import crosshairMethods from './crosshair.js'
 import loaderMethods from './loader.js'
+import cursorToolbarMethods from './cursor-toolbar.js'
 
 export class CandlestickChart {
   constructor(container, dataOrOptions = [], legacyOptions = {}) {
@@ -142,16 +143,13 @@ export class CandlestickChart {
     this._resizeObserver?.disconnect()
     this._gearBtn?.removeEventListener('click', this._onGearClick)
     document.removeEventListener('click', this._onDocClick)
+    document.removeEventListener('click', this._onToolbarDocClick)
     this._canvas.removeEventListener('wheel', this._onWheel)
     this._canvas.removeEventListener('mousedown', this._onMouseDown)
     this._canvas.removeEventListener('mousemove', this._onCanvasMove)
     this._canvas.removeEventListener('mouseleave', this._onCanvasLeave)
     document.removeEventListener('mousemove', this._onDocumentMove)
     document.removeEventListener('mouseup', this._onDocumentUp)
-    this._wrapper.removeChild(this._gearBtn)
-    this._wrapper.removeChild(this._modal)
-    this._wrapper.removeChild(this._canvas)
-    this._wrapper.removeChild(this._tooltipEl)
     this._container.removeChild(this._wrapper)
   }
 
@@ -161,24 +159,33 @@ export class CandlestickChart {
     this._wrapper = document.createElement('div')
     const fmt = (v) => typeof v === 'number' ? v + 'px' : v
     const ws = this._customW && this._customH
-      ? `position:relative;display:flex;flex-direction:column;overflow:hidden;width:${fmt(this._customW)};height:${fmt(this._customH)}`
-      : 'position:relative;display:flex;flex-direction:column;overflow:hidden;width:100%;height:100%'
+      ? `position:relative;display:flex;overflow:hidden;width:${fmt(this._customW)};height:${fmt(this._customH)}`
+      : 'position:relative;display:flex;overflow:hidden;width:100%;height:100%'
     this._wrapper.style.cssText = ws
     this._container.appendChild(this._wrapper)
 
+    this._sidebar = document.createElement('div')
+    this._sidebar.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:1px;padding-top:4px;width:28px;flex-shrink:0'
+    this._wrapper.appendChild(this._sidebar)
+
+    this._chartArea = document.createElement('div')
+    this._chartArea.style.cssText = 'position:relative;flex:1;display:flex;flex-direction:column;min-width:0'
+    this._wrapper.appendChild(this._chartArea)
+
     this._detectTheme()
     this._setupGearMenu()
+    this._setupCursorToolbar()
 
     this._canvas = document.createElement('canvas')
     this._canvas.style.cssText = 'display:block;width:100%;flex:1;min-height:0'
-    this._wrapper.appendChild(this._canvas)
+    this._chartArea.appendChild(this._canvas)
     this._ctx = this._canvas.getContext('2d')
 
-    this._tooltipEl = createTooltip(this._wrapper)
+    this._tooltipEl = createTooltip(this._chartArea)
 
     if (window.ResizeObserver) {
       this._resizeObserver = new ResizeObserver(() => this._resize())
-      this._resizeObserver.observe(this._wrapper)
+      this._resizeObserver.observe(this._chartArea)
     } else {
       window.addEventListener('resize', () => this._resize())
     }
@@ -269,7 +276,7 @@ export class CandlestickChart {
     ctx.lineWidth = 1
     ctx.strokeRect(m.left, m.top, chartW, chartH)
 
-    if (this._mouseX != null && this._mouseY != null) {
+    if (this._mouseX != null && this._mouseY != null && !this._cursorMode) {
       this._drawCrosshair(chartW, chartH, m)
     }
   }
@@ -279,3 +286,4 @@ Object.assign(CandlestickChart.prototype, gearMethods)
 Object.assign(CandlestickChart.prototype, eventsMethods)
 Object.assign(CandlestickChart.prototype, crosshairMethods)
 Object.assign(CandlestickChart.prototype, loaderMethods)
+Object.assign(CandlestickChart.prototype, cursorToolbarMethods)

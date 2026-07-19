@@ -94,7 +94,7 @@ export default {
       }
       this._priceDragging = false
       this._dateZooming = false
-      this._canvas.style.cursor = 'crosshair'
+    this._canvas.style.cursor = this._cursorMode ? 'default' : 'crosshair'
       this._checkLoadMore()
     }
 
@@ -112,7 +112,7 @@ export default {
       } else if (cy > m.top + chartH && cy <= m.top + chartH + m.bottom && cx >= m.left && cx <= m.left + (this._width - m.left - m.right)) {
         this._canvas.style.cursor = 'col-resize'
       } else {
-        this._canvas.style.cursor = 'crosshair'
+        this._canvas.style.cursor = this._cursorMode ? 'default' : 'crosshair'
       }
       const hit = getCandleAtX(e.clientX, this._canvas, m, this._width, this._visibleCount, this._startIndex, this._data)
       if (hit) {
@@ -141,6 +141,6 @@ export default {
     this._canvas.addEventListener('mouseleave', this._onCanvasLeave)
     document.addEventListener('mousemove', this._onDocumentMove)
     document.addEventListener('mouseup', this._onDocumentUp)
-    this._canvas.style.cursor = 'crosshair'
+    this._canvas.style.cursor = this._cursorMode ? 'default' : 'crosshair'
   }
 }
