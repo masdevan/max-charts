@@ -105,6 +105,7 @@ export default {
     this._modalOpen = !this._modalOpen
     this._modal.style.display = this._modalOpen ? 'block' : 'none'
     if (this._modalOpen) {
+      if (this._toolbarOpen) this._hideToolbarPopup()
       this._hoverReady = false
       setTimeout(() => { this._hoverReady = true }, 100)
       this._updateGearMenu()

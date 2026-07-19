@@ -62,7 +62,7 @@ export default {
     this._cursorGroup.addEventListener('mouseleave', clearChevronBg)
     this._toolbarPopup = document.createElement('div')
     this._toolbarPopup.style.cssText =
-      'position:absolute;z-index:1001;display:none;top:11px;left:39px;' +
+      'position:absolute;z-index:1001;display:none;top:11px;left:38px;' +
       'background:' + c.bg + ';border:1px solid ' + c.grid + ';' +
       'padding:4px;' +
       'font-family:"Terminal Grotesque",monospace;font-size:10px;min-width:120px'
@@ -83,6 +83,8 @@ export default {
     crosshairItem.style.background = 'inherit'
     const crosshairSvg = createCrosshairIcon(c.text)
     crosshairSvg.style.background = 'inherit'
+    crosshairSvg.setAttribute('width', '14')
+    crosshairSvg.setAttribute('height', '14')
     crosshairItem.appendChild(crosshairSvg)
     crosshairItem.appendChild(document.createTextNode('Crosshair'))
     crosshairItem.addEventListener('mouseenter', () => {
@@ -104,6 +106,8 @@ export default {
     cursorItem.style.background = 'inherit'
     const cursorItemIcon = createCursorIcon(c.text)
     cursorItemIcon.style.background = 'inherit'
+    cursorItemIcon.setAttribute('width', '14')
+    cursorItemIcon.setAttribute('height', '14')
     cursorItem.appendChild(cursorItemIcon)
     cursorItem.appendChild(document.createTextNode('Cursor'))
     cursorItem.addEventListener('mouseenter', () => {
@@ -167,6 +171,7 @@ export default {
 
   _toggleToolbarPopup() {
     if (this._toolbarOpen) { this._hideToolbarPopup(); return }
+    if (this._modalOpen) this._hideModal()
     this._toolbarOpen = true
     this._toolbarPopup.style.display = 'block'
     this._hoverReady = false

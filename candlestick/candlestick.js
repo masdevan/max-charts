@@ -93,9 +93,13 @@ export class CandlestickChart {
           const amt = isDark ? 25 : -25
           this._colors.labelBg = `rgb(${Math.max(0,Math.min(255,r+amt))},${Math.max(0,Math.min(255,g+amt))},${Math.max(0,Math.min(255,b+amt))})`
           if (isDark) {
-            this._colors.grid = `rgb(${Math.min(255,r+30)},${Math.min(255,g+30)},${Math.min(255,b+30)})`
-            this._colors.text = `rgb(${Math.min(255,r+80)},${Math.min(255,g+80)},${Math.min(255,b+80)})`
-            this._colors.wick = `rgb(${Math.min(255,r+60)},${Math.min(255,g+60)},${Math.min(255,b+60)})`
+            this._colors.grid = `rgb(${Math.min(255,r+50)},${Math.min(255,g+50)},${Math.min(255,b+50)})`
+            this._colors.text = `rgb(${Math.min(255,r+140)},${Math.min(255,g+140)},${Math.min(255,b+140)})`
+            this._colors.wick = `rgb(${Math.min(255,r+100)},${Math.min(255,g+100)},${Math.min(255,b+100)})`
+          } else {
+            this._colors.grid = `rgb(${Math.max(0,r-80)},${Math.max(0,g-80)},${Math.max(0,b-80)})`
+            this._colors.text = `rgb(${Math.max(0,r-180)},${Math.max(0,g-180)},${Math.max(0,b-180)})`
+            this._colors.wick = `rgb(${Math.max(0,r-120)},${Math.max(0,g-120)},${Math.max(0,b-120)})`
           }
         }
         return
@@ -103,6 +107,10 @@ export class CandlestickChart {
       el = el.parentElement
     }
     this._colors.bg = '#ffffff'
+    this._colors.grid = '#a0a0a0'
+    this._colors.text = '#333'
+    this._colors.wick = '#666'
+    this._colors.labelBg = '#e8e8e8'
   }
 
   _detectDecimals() {
