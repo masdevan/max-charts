@@ -28,7 +28,7 @@ export default {
     this._modal.style.cssText = 'position:absolute;z-index:3;display:none;' +
       'background:' + c.bg + ';border:1px solid ' + c.grid + ';border-width:1px 0 0 1px;' +
       'padding:4px;' +
-      'font-family:"Terminal Grotesque",monospace;font-size:11px;min-width:100px'
+      'font-family:"Terminal Grotesque",monospace;font-size:10px;min-width:100px'
 
     const icon = this._priceLocked ? createLockClosed(c.text) : createLockOpen(c.text)
     this._lockIcon = icon

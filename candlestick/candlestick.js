@@ -63,17 +63,20 @@ export class CandlestickChart {
   }
 
   _fontSize() {
-    return Math.max(9, Math.min(13, Math.floor((Math.min(this._width || 800, this._height || 500)) / 35)))
+    return Math.max(9, Math.min(12, Math.floor((Math.min(this._width || 800, this._height || 500)) / 45)))
   }
 
   _loadFont() {
-    if (document.getElementById('opencode-font')) return
-    const base = new URL('.', import.meta.url).href
-    const url = new URL('../fonts/terminal-grotesque.ttf', base).href
-    const s = document.createElement('style')
-    s.id = 'opencode-font'
-    s.textContent = "@font-face { font-family:'Terminal Grotesque'; src:url('" + url + "') format('truetype') }"
-    document.head.appendChild(s)
+    if (this._fontPromise) return this._fontPromise
+    const url = new URL('../fonts/terminal-grotesque.ttf', import.meta.url).href
+    this._fontPromise = (async () => {
+      try {
+        const font = new FontFace('Terminal Grotesque', `url(${url})`)
+        await font.load()
+        document.fonts.add(font)
+      } catch (_) {}
+    })()
+    return this._fontPromise
   }
 
   _detectTheme() {
@@ -163,9 +166,6 @@ export class CandlestickChart {
     this._wrapper.style.cssText = ws
     this._container.appendChild(this._wrapper)
 
-    this._loadFont()
-    this._detectTheme()
-
     this._setupGearMenu()
 
     this._canvas = document.createElement('canvas')
@@ -183,13 +183,17 @@ export class CandlestickChart {
     }
 
     this._setupEvents()
-    this._resize()
 
-    if (this._loadFn) {
-      this._loadMore(null)
-    } else {
-      this.setData(this._data)
-    }
+    this._loadFont().then(() => {
+      this._fontReady = true
+      this._detectTheme()
+      this._resize()
+      if (this._loadFn) {
+        this._loadMore(null)
+      } else {
+        this.setData(this._data)
+      }
+    })
   }
 
   _resize() {
@@ -200,6 +204,7 @@ export class CandlestickChart {
     this._ctx.scale(dpr, dpr)
     this._width = rect.width
     this._height = rect.height
+    if (!this._fontReady) return
     this._render()
     this._positionGearMenu()
   }

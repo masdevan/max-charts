@@ -24,7 +24,7 @@ export default {
 
     ctx.setLineDash([])
 
-    ctx.font = 'bold ' + this._fontSize() + 'px "Terminal Grotesque", monospace'
+    ctx.font = this._fontSize() + 'px "Terminal Grotesque", monospace'
     const fs = this._fontSize()
 
     const priceLabel = price.toFixed(this._decimals || 2)
