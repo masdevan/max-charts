@@ -28,6 +28,7 @@ export class CandlestickChart {
       this._loadBeforeDate = null
       this._customW = opts.width || null
       this._customH = opts.height || null
+      this._onTrade = opts.onTrade || null
     }
 
     this._decimals = null

@@ -115,14 +115,27 @@ export default {
     confirmBtn.addEventListener('mouseenter', () => { confirmBtn.style.background = side === 'Buy' ? '#1565C0' : '#c62828' })
     confirmBtn.addEventListener('mouseleave', () => { confirmBtn.style.background = color })
     confirmBtn.addEventListener('click', () => {
-      close()
-      this._showTradePlacedModal(side)
+      const trade = { side, entry: this._entryPrice, sl: this._slPrice, tp: this._tpPrice }
+      if (this._onTrade) {
+        confirmBtn.disabled = true
+        confirmBtn.textContent = '...'
+        Promise.resolve(this._onTrade(trade)).then(() => {
+          close()
+          this._showTradePlacedModal(side)
+        }).catch((err) => {
+          close()
+          this._showTradePlacedModal(side, err.message || 'Error')
+        })
+      } else {
+        close()
+        this._showTradePlacedModal(side)
+      }
     })
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close() })
     document.body.appendChild(overlay)
   },
 
-  _showTradePlacedModal(side) {
+  _showTradePlacedModal(side, error) {
     const overlay = document.createElement('div')
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999'
     const modal = document.createElement('div')
@@ -133,7 +146,7 @@ export default {
       'font:11px "Terminal Grotesque",monospace;color:' + this._colors.text + ';' +
       'min-width:120px;text-align:center'
     modal.innerHTML =
-      '<div>' + side + ' order placed</div>' +
+      '<div style="color:' + (error ? '#ef5350' : 'inherit') + '">' + (error || side + ' order placed') + '</div>' +
       '<button style="cursor:pointer;border:1px solid ' + this._colors.grid + ';border-radius:2px;padding:4px 12px;font:inherit;color:' + this._colors.text + ';background:' + this._colors.bg + ';margin-top:8px">OK</button>'
     overlay.appendChild(modal)
     const close = () => { document.body.removeChild(overlay) }
@@ -225,7 +238,6 @@ export default {
       return { x: bx, y: by, w: bw, h: bh }
     }
 
-    // Separate lines for SL/TP if set
     const lines = []
     if (this._slPrice != null) {
       lines.push({ price: this._slPrice, color: 'rgb(239,83,80)', type: 'sl' })
@@ -269,18 +281,15 @@ export default {
       ctx.textAlign = 'start'
       ctx.textBaseline = 'alphabetic'
 
-      // Entire box = drag, right 14px = remove
       const xAreaW = 14
       this._tradeLabelBoxes.push({ type: l.type, x: bx, y: by, w: bw - xAreaW, h: bh })
       this._tradeLabelBoxes.push({ type: l.type, x: bx + bw - xAreaW, y: by, w: xAreaW, h: bh, remove: true })
     }
 
-    // Entry line
     const ey = yPos(this._entryPrice)
     if (ey < m.top || ey > m.top + chartH) return
     drawHorizLine(ey, 'rgba(128,128,128,0.6)', false)
 
-    // Build label list for entry line (only labels not yet separated)
     const entryLabels = []
     if (this._slPrice == null) entryLabels.push({ text: 'SL', color: 'rgb(239,83,80)', type: 'sl' })
     entryLabels.push({ text: 'Entry', color: 'rgb(80,80,80)', type: 'entry' })
@@ -304,7 +313,6 @@ export default {
       curX += tw + padX * 2 + gap
     })
 
-    // Price labels on right side
     const rightPrices = [{ price: this._entryPrice, color: 'rgba(128,128,128,0.6)' }]
     if (this._slPrice != null) rightPrices.push({ price: this._slPrice, color: 'rgb(239,83,80)' })
     if (this._tpPrice != null) rightPrices.push({ price: this._tpPrice, color: 'rgb(38,166,154)' })

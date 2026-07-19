@@ -6,7 +6,7 @@
 <title>Candlestick Chart</title>
 <style>
   * {
-    background: #121212;
+    background: #111;
   }
   .chart-container {
     display: flex;
@@ -38,6 +38,9 @@ const chart = new CandlestickChart('#chart', {
     if (idx <= 0) return []
     const start = Math.max(0, idx - 100)
     return h1Data.slice(start, idx).reverse()
+  },
+  onTrade: async (trade) => {
+    await new Promise(r => setTimeout(r, 500))
   }
 })
 </script>

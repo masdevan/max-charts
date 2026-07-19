@@ -102,7 +102,35 @@ Removes canvas, tooltip, and all event listeners. Use in Electron when component
 |--------|----------|
 | Scroll wheel | Zoom in/out |
 | Drag left/right | Pan timeline |
+| Drag price axis | Stretch price range |
 | Hover | Show OHLC tooltip |
+| Drag SL/TP label | Move stop-loss / take-profit line |
+
+---
+
+## Trading
+
+Enable trading by clicking the wallet icon in the sidebar. An entry line appears at the last close price with SL (red) and TP (green) labels.
+
+- **SL/TP labels** on the entry line — drag them to separate into individual dashed lines
+- **Separated SL/TP lines** — drag vertically to adjust, click `×` to remove
+- **Buy / Sell buttons** appear at the top-right of the chart area
+- Button state is dynamic: if TP > Entry or SL < Entry → Buy active; if TP < Entry or SL > Entry → Sell active
+- Clicking Buy/Sell shows a confirmation modal with entry, SL, and TP prices
+- On confirm, `onTrade` callback is invoked
+
+### `onTrade` option
+
+```js
+const chart = new CandlestickChart('#chart', {
+  load: async (beforeDate) => { /* ... */ },
+  onTrade: async (trade) => {
+    await fetch('/api/order', { method: 'POST', body: JSON.stringify(trade) })
+  }
+})
+```
+
+The callback receives the trade object and can return a Promise. The modal shows a loading state, then "order placed" on success or the error message on rejection.
 
 ---
 
