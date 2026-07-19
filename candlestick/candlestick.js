@@ -30,7 +30,7 @@ export class CandlestickChart {
 
     this._decimals = null
     this._startIndex = 0
-    this._visibleCount = 30
+    this._visibleCount = 60
     this._minVisible = 5
     this._colors = {
       bullish: '#26a69a',
@@ -115,10 +115,7 @@ export class CandlestickChart {
   }
 
   _defaultVisibleCount() {
-    if (!this._width) return Math.min(this._data.length || 100, 100)
-    const m = this._getMargin()
-    const chartW = this._width - m.left - m.right
-    return Math.max(this._minVisible, Math.min(this._data.length, Math.floor(chartW / 8)))
+    return this._data.length || 100
   }
 
   setData(data) {
@@ -156,10 +153,13 @@ export class CandlestickChart {
   }
 
   _init() {
+    document.body.style.margin = '0'
+    this._container.style.overflow = 'hidden'
     this._wrapper = document.createElement('div')
+    const fmt = (v) => typeof v === 'number' ? v + 'px' : v
     const ws = this._customW && this._customH
-      ? `position:relative;display:flex;flex-direction:column;width:${this._customW}px;height:${this._customH}px`
-      : 'position:relative;display:flex;flex-direction:column;width:100%;height:100%'
+      ? `position:relative;display:flex;flex-direction:column;overflow:hidden;width:${fmt(this._customW)};height:${fmt(this._customH)}`
+      : 'position:relative;display:flex;flex-direction:column;overflow:hidden;width:100%;height:100%'
     this._wrapper.style.cssText = ws
     this._container.appendChild(this._wrapper)
 

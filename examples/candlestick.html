@@ -29,8 +29,8 @@ const allData = await res.json()
 const h1Data = allData.filter(d => d.timeframe === 'h1')
 
 const chart = new CandlestickChart('#chart', {
-  width: 600,
-  height: 300,
+  width: 1300,
+  height: 600,
   limit: 100,
   load: async (beforeDate) => {
     if (!beforeDate) return h1Data.slice(-100).reverse()

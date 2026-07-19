@@ -8,19 +8,24 @@ export default {
         this._hasMore = false
         return
       }
-      if (results.length < this._loadLimit) this._hasMore = false
-
       if (!beforeDate) {
         this._data = results.slice().reverse()
         if (this._decimals == null) this._detectDecimals()
-        this._visibleCount = this._defaultVisibleCount()
-        this._startIndex = Math.max(0, this._data.length - this._visibleCount)
+        for (let i = 0; i < 2; i++) {
+          if (!this._hasMore) break
+          const more = await this._loadFn(this._data[0].date)
+          if (!more || !more.length) { this._hasMore = false; break }
+          this._data = [...more.slice().reverse(), ...this._data]
+        }
+        if (this._decimals == null) this._detectDecimals()
+        this._loadBeforeDate = this._data[0].date
+        this._visibleCount = this._data.length
+        this._startIndex = 0
       } else {
         const added = results.slice().reverse()
         this._startIndex += added.length
         this._dragStartIndex += added.length
         this._data = [...added, ...this._data]
-        if (this._decimals == null) this._detectDecimals()
       }
 
       if (this._data.length > 0) this._loadBeforeDate = this._data[0].date
