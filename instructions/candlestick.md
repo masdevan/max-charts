@@ -134,11 +134,65 @@ The callback receives the trade object and can return a Promise. The modal shows
 
 ---
 
+## Positions
+
+Display position markers on the chart using `chart.setPositions()`:
+
+```js
+chart.setPositions([
+  {
+    "decision": "sell",
+    "entry": 4687.5,
+    "sl": 4710.0,
+    "tp": 4600.0,
+    "openTime": "2026-05-11T07:00:00",
+    "closeTime": "2026-05-14T14:00:00"
+  }
+])
+```
+
+- `closeTime` null or absent → running position
+- Close price is read automatically from candle data at `closeTime`
+```
+
+Each position draws:
+- Filled circle at the entry candle with price and date labels
+- Filled circle at the close candle with price and date labels (closed)
+- A diagonal line connecting entry to close, showing P&L direction
+- Open positions: diagonal line from entry candle to last candle at current close price
+
+### Custom key mapping
+
+If your API uses different field names, map them via `positionKeys`:
+
+```js
+const chart = new CandlestickChart('#chart', {
+  positionKeys: {
+    decision: 'type',
+    entry: 'openPrice',
+    sl: 'stopLoss',
+    tp: 'takeProfit',
+    openTime: 'entryTime',
+    closeTime: 'exitTime'
+  }
+})
+```
+
+Trades placed via the Buy/Sell buttons are automatically added as open positions.
+
+```js
+const res = await fetch('collections/positions.json')
+chart.setPositions(await res.json())
+```
+
+---
+
 ## File structure
 
 ```
 candlestick/
 ├── candlestick.js       # Library
 collections/
-└── candlestick.json      # Sample data
+├── candlestick.json      # Sample data
+└── positions.json         # Sample positions
 ```

@@ -80,6 +80,13 @@ export default {
     this._render()
   },
 
+  _deactivateTrading() {
+    this._tradingActive = false
+    this._walletBtn.style.background = 'transparent'
+    this._tradeBtnGroup.style.display = 'none'
+    this._render()
+  },
+
   _showTradeConfirmModal(side) {
     const overlay = document.createElement('div')
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:9999'
@@ -115,12 +122,26 @@ export default {
     confirmBtn.addEventListener('mouseenter', () => { confirmBtn.style.background = side === 'Buy' ? '#1565C0' : '#c62828' })
     confirmBtn.addEventListener('mouseleave', () => { confirmBtn.style.background = color })
     confirmBtn.addEventListener('click', () => {
-      const trade = { side, entry: this._entryPrice, sl: this._slPrice, tp: this._tpPrice }
+      const trade = { side: side.toLowerCase(), entry: this._entryPrice, sl: this._slPrice, tp: this._tpPrice }
+      const pk = this._positionKeys || { decision: 'decision', entry: 'entry', sl: 'sl', tp: 'tp', openTime: 'openTime', closeTime: 'closeTime' }
+      const addPosition = () => {
+        this._positions.push({
+          [pk.decision]: trade.side,
+          [pk.entry]: trade.entry,
+          [pk.sl]: trade.sl,
+          [pk.tp]: trade.tp,
+          [pk.openTime]: new Date().toISOString(),
+          [pk.closeTime]: null
+        })
+        this._render()
+      }
       if (this._onTrade) {
         confirmBtn.disabled = true
         confirmBtn.textContent = '...'
         Promise.resolve(this._onTrade(trade)).then(() => {
           close()
+          addPosition()
+          this._deactivateTrading()
           this._showTradePlacedModal(side)
         }).catch((err) => {
           close()
@@ -128,6 +149,8 @@ export default {
         })
       } else {
         close()
+        addPosition()
+        this._deactivateTrading()
         this._showTradePlacedModal(side)
       }
     })
@@ -137,7 +160,7 @@ export default {
 
   _showTradePlacedModal(side, error) {
     const overlay = document.createElement('div')
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999'
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:9999'
     const modal = document.createElement('div')
     modal.style.cssText =
       'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);' +

@@ -1,0 +1,34 @@
+[
+  {
+    "decision": "sell",
+    "entry": 4687.5,
+    "sl": 4800.0,
+    "tp": 4500.0,
+    "openTime": "2026-05-11T07:00:00",
+    "closeTime": "2026-05-19T13:00:00"
+  },
+  {
+    "decision": "buy",
+    "entry": 4530.0,
+    "sl": 4480.0,
+    "tp": 4580.0,
+    "openTime": "2026-05-21T06:00:00",
+    "closeTime": "2026-05-26T10:00:00"
+  },
+  {
+    "decision": "sell",
+    "entry": 4565.0,
+    "sl": 4580.0,
+    "tp": 3900.0,
+    "openTime": "2026-06-02T08:00:00",
+    "closeTime": null
+  },
+  {
+    "decision": "buy",
+    "entry": 4167.0,
+    "sl": 3950.0,
+    "tp": 4250.0,
+    "openTime": "2026-07-06T12:00:00",
+    "closeTime": null
+  }
+]

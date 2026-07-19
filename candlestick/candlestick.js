@@ -29,6 +29,10 @@ export class CandlestickChart {
       this._customW = opts.width || null
       this._customH = opts.height || null
       this._onTrade = opts.onTrade || null
+      this._positionKeys = opts.positionKeys || {
+        decision: 'decision', entry: 'entry', sl: 'sl', tp: 'tp',
+        openTime: 'openTime', closeTime: 'closeTime'
+      }
     }
 
     this._decimals = null
@@ -52,6 +56,7 @@ export class CandlestickChart {
     this._dateZooming = false
     this._mouseX = null
     this._mouseY = null
+    this._positions = []
     this._init()
   }
 
@@ -146,6 +151,11 @@ export class CandlestickChart {
     this._data = data || []
     this._visibleCount = this._defaultVisibleCount()
     this._startIndex = Math.max(0, this._data.length - this._visibleCount)
+    this._render()
+  }
+
+  setPositions(positions) {
+    this._positions = positions || []
     this._render()
   }
 
@@ -284,6 +294,7 @@ export class CandlestickChart {
     ctx.restore()
     drawXAxis(ctx, this._data, startIdx, m.left, chartW, m.top, chartH, this._visibleCount, this._colors, fs, this._decimals)
     this._renderTradingLines(ctx)
+    this._renderPositions(ctx)
     if (this._updateTradeButtons) this._updateTradeButtons()
 
     ctx.strokeStyle = this._colors.grid
@@ -293,6 +304,133 @@ export class CandlestickChart {
     if (this._mouseX != null && this._mouseY != null && !this._cursorMode) {
       this._drawCrosshair(chartW, chartH, m)
     }
+  }
+
+  _renderPositions(ctx) {
+    if (!this._positions.length) return
+    const m = this._lastMargin || this._getMargin()
+    const chartW = this._width - m.left - m.right
+    const chartH = this._height - m.top - m.bottom
+    if (chartW <= 0 || chartH <= 0) return
+    const minP = this._minP, maxP = this._maxP
+    if (minP == null || maxP == null) return
+    const yPos = (price) => m.top + chartH - (price - minP) / (maxP - minP) * chartH
+    const fs = this._fontSize()
+    const candleW = chartW / this._visibleCount
+    const startIdx = this._startIndex
+    const endIdx = startIdx + this._visibleCount
+
+    function xPos(i) {
+      return m.left + (i - startIdx) * candleW + candleW / 2
+    }
+
+    // Clip everything to chart area
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(m.left, m.top, chartW, chartH)
+    ctx.clip()
+
+    ctx.font = Math.max(8, fs - 1) + 'px "Terminal Grotesque", monospace'
+    const fs2 = Math.max(8, fs - 1)
+    const pad = 2
+
+    function drawTag(text, px, py, bg, right) {
+      const tw = ctx.measureText(text).width
+      const bw = tw + pad * 2, bh = fs2 + pad * 2
+      const bx = right ? px - bw : px
+      const by = py - bh / 2
+      ctx.fillStyle = bg
+      ctx.beginPath()
+      const r = 2
+      ctx.moveTo(bx + r, by)
+      ctx.lineTo(bx + bw - r, by)
+      ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + r)
+      ctx.lineTo(bx + bw, by + bh - r)
+      ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - r, by + bh)
+      ctx.lineTo(bx + r, by + bh)
+      ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - r)
+      ctx.lineTo(bx, by + r)
+      ctx.quadraticCurveTo(bx, by, bx + r, by)
+      ctx.closePath()
+      ctx.fill()
+      ctx.fillStyle = '#fff'
+      ctx.textBaseline = 'middle'
+      ctx.textAlign = right ? 'right' : 'left'
+      ctx.fillText(text, right ? bx + bw - pad : bx + pad, py)
+      ctx.textAlign = 'start'
+      ctx.textBaseline = 'alphabetic'
+    }
+
+    function drawMarker(x, y, color, alpha) {
+      ctx.save()
+      ctx.globalAlpha = alpha
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.arc(x, y, 4, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+    }
+
+    const pk = this._positionKeys
+
+    for (const pos of this._positions) {
+      const entryIdx = this._data.findIndex(d => d.date >= pos[pk.openTime])
+      if (entryIdx < 0) continue
+
+      const isBuy = pos[pk.decision] === 'buy'
+      const color = isBuy ? '#2196F3' : '#ef5350'
+      const isClosed = pos[pk.closeTime] != null
+      const alpha = isClosed ? 0.5 : 1
+
+      let closeIdx = -1
+      if (isClosed) {
+        closeIdx = this._data.findIndex(d => d.date >= pos[pk.closeTime])
+      }
+      const hasClose = isClosed && closeIdx >= 0 && closeIdx < this._data.length
+
+      if (isClosed && entryIdx < startIdx - 1 && closeIdx < startIdx - 1) continue
+      if (isClosed && entryIdx > endIdx + 1 && closeIdx > endIdx + 1) continue
+      if (!isClosed && entryIdx > endIdx + 1) continue
+
+      const ex = xPos(entryIdx)
+      const ey = yPos(pos[pk.entry])
+
+      let cx, cy
+      if (hasClose) {
+        cx = xPos(closeIdx)
+        cy = yPos(this._data[closeIdx].close)
+      } else {
+        const last = this._data.length - 1
+        cx = xPos(last)
+        cy = yPos(this._data[last].close)
+      }
+
+      ctx.save()
+      ctx.globalAlpha = alpha
+      ctx.strokeStyle = color
+      ctx.lineWidth = 1
+      ctx.setLineDash([4, 3])
+      ctx.beginPath()
+      ctx.moveTo(ex, ey)
+      ctx.lineTo(cx, cy)
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.restore()
+
+      if (ey >= m.top && ey <= m.top + chartH) {
+        drawMarker(ex, ey, color, alpha)
+        drawTag(formatPrice(pos[pk.entry], this._decimals), ex + 6, ey - 8, color)
+        drawTag(new Date(pos[pk.openTime]).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), ex + 6, ey + 8, this._colors.labelBg)
+      }
+
+      if (hasClose && cy >= m.top && cy <= m.top + chartH) {
+        drawMarker(cx, cy, color, alpha)
+        drawTag(formatPrice(this._data[closeIdx].close, this._decimals), cx - 6, cy - 8, color, true)
+        drawTag(new Date(pos[pk.closeTime]).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), cx - 6, cy + 8, this._colors.labelBg, true)
+      }
+    }
+
+    ctx.restore()
   }
 }
 

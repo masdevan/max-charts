@@ -41,8 +41,16 @@ const chart = new CandlestickChart('#chart', {
   },
   onTrade: async (trade) => {
     await new Promise(r => setTimeout(r, 500))
+  },
+  positionKeys: {
+    decision: 'decision', entry: 'entry', sl: 'sl', tp: 'tp',
+    openTime: 'openTime', closeTime: 'closeTime'
   }
 })
+
+const posRes = await fetch('../collections/positions.json')
+const positions = await posRes.json()
+chart.setPositions(positions)
 </script>
 </body>
 </html>
