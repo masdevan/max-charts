@@ -1,5 +1,5 @@
 export function niceStep(range) {
-  const roughStep = range / 5
+  const roughStep = range / 8
   const mag = Math.pow(10, Math.floor(Math.log10(roughStep)))
   const res = roughStep / mag
   if (res <= 1.5) return 1 * mag

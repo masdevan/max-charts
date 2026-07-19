@@ -22,16 +22,16 @@ export function showTooltip(el, data, margin, textColor, fontSize, topOffset = 0
 
   el.innerHTML =
     `<span style="color:${textColor}">${dateStr}</span>` +
-    `<span style="color:${color};margin-left:5px">${arrow} <b>${fmt(data.close)}</b></span>` +
+    `<span style="color:${color};margin-left:5px">${arrow} ${fmt(data.close)}</span>` +
     `<span style="color:${textColor};opacity:0.5;margin:0 5px">|</span>` +
-    `<span style="color:${textColor}">O <b>${fmt(data.open)}</b></span>` +
-    `<span style="color:${textColor};margin-left:5px">H <b>${fmt(data.high)}</b></span>` +
-    `<span style="color:${textColor};margin-left:5px">L <b>${fmt(data.low)}</b></span>` +
-    `<span style="color:${color};margin-left:5px">C <b>${fmt(data.close)}</b></span>`
+    `<span style="color:${textColor}">O ${fmt(data.open)}</span>` +
+    `<span style="color:${textColor};margin-left:5px">H ${fmt(data.high)}</span>` +
+    `<span style="color:${textColor};margin-left:5px">L ${fmt(data.low)}</span>` +
+    `<span style="color:${color};margin-left:5px">C ${fmt(data.close)}</span>`
 
   for (const child of el.querySelectorAll('*')) child.style.background = 'transparent'
 
-  el.style.fontSize = fontSize + 'px'
+  el.style.fontSize = '10px'
   el.style.left = (margin.left + 3) + 'px'
   el.style.top = (margin.top + topOffset) + 'px'
   el.style.display = 'block'

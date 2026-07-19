@@ -75,7 +75,7 @@ function formatDateLabel(dt, totalMs) {
 }
 
 export function drawXAxis(ctx, data, startIdx, left, chartW, top, chartH, visibleCount, colors, fontSize, decimals) {
-  const step = Math.max(1, Math.floor(visibleCount / 6))
+  const step = Math.max(1, Math.floor(visibleCount / 14))
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
   ctx.font = fontSize + 'px "Terminal Grotesque", monospace'
