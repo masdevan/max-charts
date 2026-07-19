@@ -30,7 +30,6 @@ export default {
     crosshairIcon.style.background = 'inherit'
     this._crosshairBtnIcon = crosshairIcon
     this._cursorBtn.appendChild(this._cursorBtnIcon)
-    this._cursorBtn.style.background = c.grid
     this._cursorBtn.title = 'Cursor'
 
     this._chevronBtn = document.createElement('button')
@@ -74,7 +73,7 @@ export default {
       this._cursorBtn.style.background = c.grid
     })
     this._cursorBtn.addEventListener('mouseleave', () => {
-      this._cursorBtn.style.background = (this._cursorMode || this._toolbarOpen) ? c.grid : 'transparent'
+      if (!this._toolbarOpen) this._cursorBtn.style.background = 'transparent'
     })
 
     const crosshairItem = document.createElement('div')
@@ -152,8 +151,6 @@ export default {
 
   _setCursorMode(cursorMode) {
     this._cursorMode = cursorMode
-    const c = this._colors
-    this._cursorBtn.style.background = cursorMode ? c.grid : 'transparent'
     this._cursorBtn.textContent = ''
     this._cursorBtn.appendChild(cursorMode ? this._cursorBtnIcon : this._crosshairBtnIcon)
     this._updatePopupActive()
@@ -187,6 +184,7 @@ export default {
     this._toolbarPopup.style.display = 'none'
     this._chevronBtn.style.background = 'transparent'
     this._chevronBtn.style.opacity = '0'
-    this._cursorBtn.style.background = this._cursorMode ? this._colors.grid : 'transparent'
+    this._cursorBtn.style.background = 'transparent'
+    this._cursorBtn.style.background = 'transparent'
   }
 }

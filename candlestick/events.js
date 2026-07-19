@@ -25,6 +25,23 @@ export default {
       const chartW = this._width - m.left - m.right
       const chartH = this._height - m.top - m.bottom
 
+      if (this._tradingActive) {
+        const hit = this._hitTestTradeLabels(cx, cy)
+        if (hit) {
+          if (hit.remove) {
+            if (hit.type === 'sl') this._slPrice = null
+            else if (hit.type === 'tp') this._tpPrice = null
+            if (this._updateTradeButtons) this._updateTradeButtons()
+            this._render()
+            return
+          }
+          this._tradingDragging = hit.type
+          this._isDragging = true
+          this._canvas.style.cursor = 'row-resize'
+          return
+        }
+      }
+
       if (cx > m.left + chartW && cx <= m.left + chartW + m.right && cy >= m.top && cy <= m.top + chartH) {
         this._priceDragging = true
         this._dragStartY = e.clientY
@@ -58,6 +75,18 @@ export default {
       const chartW = this._width - m.left - m.right
       const chartH = this._height - m.top - m.bottom
 
+      if (this._tradingDragging) {
+        const y = this._mouseY
+        const minP = this._minP, maxP = this._maxP
+        const price = maxP - (y - m.top) / chartH * (maxP - minP)
+        const clamped = Math.max(minP, Math.min(maxP, price))
+        if (this._tradingDragging === 'sl') this._slPrice = clamped
+        else if (this._tradingDragging === 'tp') this._tpPrice = clamped
+        if (this._updateTradeButtons) this._updateTradeButtons()
+        this._render()
+        return
+      }
+
       if (this._priceDragging) {
         const mid = (this._dragStartMaxP + this._dragStartMinP) / 2
         const range = this._dragStartMaxP - this._dragStartMinP
@@ -88,6 +117,7 @@ export default {
     this._onDocumentUp = () => {
       if (!this._isDragging) return
       this._isDragging = false
+      this._tradingDragging = null
       if (this._priceDragging && this._priceLocked) {
         this._priceLocked = false
         this._updateGearMenu()
@@ -107,6 +137,13 @@ export default {
       const cx = this._mouseX, cy = this._mouseY
       const chartW = this._width - m.left - m.right
       const chartH = this._height - m.top - m.bottom
+      if (this._tradingActive) {
+        const hit = this._hitTestTradeLabels(cx, cy)
+        if (hit) {
+          this._canvas.style.cursor = hit.remove ? 'pointer' : 'row-resize'
+          return
+        }
+      }
       if (cx > m.left + chartW && cx <= m.left + chartW + m.right && cy >= m.top && cy <= m.top + chartH) {
         this._canvas.style.cursor = 'row-resize'
       } else if (cy > m.top + chartH && cy <= m.top + chartH + m.bottom && cx >= m.left && cx <= m.left + (this._width - m.left - m.right)) {

@@ -6,6 +6,7 @@ import eventsMethods from './events.js'
 import crosshairMethods from './crosshair.js'
 import loaderMethods from './loader.js'
 import cursorToolbarMethods from './cursor-toolbar.js'
+import tradingMethods from './trading-panel.js'
 
 export class CandlestickChart {
   constructor(container, dataOrOptions = [], legacyOptions = {}) {
@@ -158,6 +159,7 @@ export class CandlestickChart {
     this._canvas.removeEventListener('mouseleave', this._onCanvasLeave)
     document.removeEventListener('mousemove', this._onDocumentMove)
     document.removeEventListener('mouseup', this._onDocumentUp)
+    this._tradeBtnGroup?.remove()
     this._container.removeChild(this._wrapper)
   }
 
@@ -183,6 +185,7 @@ export class CandlestickChart {
     this._detectTheme()
     this._setupGearMenu()
     this._setupCursorToolbar()
+    this._setupTradingButton()
 
     this._canvas = document.createElement('canvas')
     this._canvas.style.cssText = 'display:block;width:100%;flex:1;min-height:0'
@@ -279,6 +282,8 @@ export class CandlestickChart {
     }
     ctx.restore()
     drawXAxis(ctx, this._data, startIdx, m.left, chartW, m.top, chartH, this._visibleCount, this._colors, fs, this._decimals)
+    this._renderTradingLines(ctx)
+    if (this._updateTradeButtons) this._updateTradeButtons()
 
     ctx.strokeStyle = this._colors.grid
     ctx.lineWidth = 1
@@ -295,3 +300,4 @@ Object.assign(CandlestickChart.prototype, eventsMethods)
 Object.assign(CandlestickChart.prototype, crosshairMethods)
 Object.assign(CandlestickChart.prototype, loaderMethods)
 Object.assign(CandlestickChart.prototype, cursorToolbarMethods)
+Object.assign(CandlestickChart.prototype, tradingMethods)
