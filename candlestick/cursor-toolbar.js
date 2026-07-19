@@ -2,6 +2,12 @@ import { createCursorIcon } from '../icons/cursor.js'
 import { createCrosshairIcon } from '../icons/crosshair-icon.js'
 import { createChevronRightIcon } from '../icons/chevron-right.js'
 
+function darken(rgb, amt) {
+  const m = rgb.match(/\d+/g)
+  if (!m) return rgb
+  return `rgb(${Math.max(0,+m[0]-amt)},${Math.max(0,+m[1]-amt)},${Math.max(0,+m[2]-amt)})`
+}
+
 export default {
   _setupCursorToolbar() {
     this._cursorMode = false
@@ -28,7 +34,7 @@ export default {
 
     this._chevronBtn = document.createElement('button')
     this._chevronBtn.style.cssText =
-      'cursor:pointer;background:transparent;border:none;margin-left:1px;padding:3px 0 3px 0px;display:flex;align-items:center;justify-content:center;border-radius:2px;position:absolute;left:100%;top:0;height:100%;opacity:0;z-index:1000'
+      'cursor:pointer;background:transparent;border:none;padding:3px 0 3px 0px;display:flex;align-items:center;justify-content:center;border-radius:2px;position:absolute;left:100%;top:0;height:100%;opacity:0;z-index:1000'
     this._chevronIcon = createChevronRightIcon(c.text)
     this._chevronIcon.style.background = 'inherit'
     this._chevronBtn.appendChild(this._chevronIcon)
@@ -48,21 +54,27 @@ export default {
     this._cursorGroup.className = 'oc-cg'
     this._chevronBtn.className = 'oc-cv'
 
-    this._cursorGroup.addEventListener('mouseenter', () => {
-      this._chevronBtn.style.background = c.grid
-      if (this._toolbarOpen) this._chevronBtn.style.opacity = '1'
-    })
-    this._cursorGroup.addEventListener('mouseleave', () => {
-      this._chevronBtn.style.background = 'transparent'
-      if (this._toolbarOpen) this._chevronBtn.style.opacity = '1'
-    })
-
+    const chevronBg = darken(c.grid, 15)
+    const setChevronBg = () => { this._chevronBtn.style.background = chevronBg }
+    const clearChevronBg = () => { if (!this._toolbarOpen) this._chevronBtn.style.background = 'transparent' }
+    this._cursorGroup.addEventListener('mouseenter', setChevronBg)
+    this._cursorGroup.addEventListener('mouseleave', clearChevronBg)
     this._toolbarPopup = document.createElement('div')
     this._toolbarPopup.style.cssText =
       'position:absolute;z-index:1001;display:none;top:11px;left:39px;' +
       'background:' + c.bg + ';border:1px solid ' + c.grid + ';' +
       'padding:4px;' +
       'font-family:"Terminal Grotesque",monospace;font-size:10px;min-width:120px'
+
+    this._toolbarPopup.addEventListener('mouseenter', setChevronBg)
+    this._toolbarPopup.addEventListener('mouseleave', clearChevronBg)
+
+    this._cursorBtn.addEventListener('mouseenter', () => {
+      this._cursorBtn.style.background = c.grid
+    })
+    this._cursorBtn.addEventListener('mouseleave', () => {
+      this._cursorBtn.style.background = (this._cursorMode || this._toolbarOpen) ? c.grid : 'transparent'
+    })
 
     const crosshairItem = document.createElement('div')
     crosshairItem.style.cssText =
@@ -159,8 +171,9 @@ export default {
     if (this._toolbarOpen) {
       this._hoverReady = false
       setTimeout(() => { this._hoverReady = true }, 100)
-      this._chevronBtn.style.background = this._colors.grid
+      this._chevronBtn.style.background = darken(this._colors.grid, 15)
       this._chevronBtn.style.opacity = '1'
+      this._cursorBtn.style.background = this._colors.grid
       this._updatePopupActive()
     }
   },
@@ -170,5 +183,6 @@ export default {
     this._toolbarPopup.style.display = 'none'
     this._chevronBtn.style.background = 'transparent'
     this._chevronBtn.style.opacity = '0'
+    this._cursorBtn.style.background = this._cursorMode ? this._colors.grid : 'transparent'
   }
 }
