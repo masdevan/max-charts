@@ -166,6 +166,7 @@ export class CandlestickChart {
     this._wrapper.style.cssText = ws
     this._container.appendChild(this._wrapper)
 
+    this._detectTheme()
     this._setupGearMenu()
 
     this._canvas = document.createElement('canvas')
@@ -186,7 +187,6 @@ export class CandlestickChart {
 
     this._loadFont().then(() => {
       this._fontReady = true
-      this._detectTheme()
       this._resize()
       if (this._loadFn) {
         this._loadMore(null)

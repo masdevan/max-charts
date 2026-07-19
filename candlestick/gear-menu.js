@@ -31,8 +31,12 @@ export default {
       'font-family:"Terminal Grotesque",monospace;font-size:10px;min-width:100px'
 
     const icon = this._priceLocked ? createLockClosed(c.text) : createLockOpen(c.text)
-    this._lockIcon = icon
+    icon.style.background = 'inherit'
+    this._lockIcon = document.createElement('div')
+    this._lockIcon.style.cssText = 'display:flex;background:inherit;align-items:center;justify-content:center'
+    this._lockIcon.appendChild(icon)
     this._modalLabel = document.createElement('span')
+    this._modalLabel.style.background = 'inherit'
     this._modalLabel.textContent = this._priceLocked ? 'Chart Fixed' : 'Chart Auto'
 
     this._modalItem = document.createElement('div')
@@ -80,8 +84,9 @@ export default {
   _updateGearMenu() {
     this._modalItem.style.background = ''
     const icon = this._priceLocked ? createLockClosed(this._colors.text) : createLockOpen(this._colors.text)
-    this._lockIcon = icon
-    this._modalItem.replaceChild(this._lockIcon, this._modalItem.firstChild)
+    icon.style.background = 'inherit'
+    this._lockIcon.textContent = ''
+    this._lockIcon.appendChild(icon)
     this._modalLabel.textContent = this._priceLocked ? 'Chart Fixed' : 'Chart Auto'
   },
 
