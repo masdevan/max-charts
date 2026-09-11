@@ -29,6 +29,8 @@ export class CandlestickChart {
       this._customW = opts.width || null
       this._customH = opts.height || null
       this._onTrade = opts.onTrade || null
+      this._timeframes = opts.timeframes || null
+      this._onTimeframeChange = opts.onTimeframeChange || null
       this._positionKeys = opts.positionKeys || {
         decision: 'decision', entry: 'entry', sl: 'sl', tp: 'tp',
         openTime: 'openTime', closeTime: 'closeTime'
@@ -164,12 +166,15 @@ export class CandlestickChart {
     this._gearBtn?.removeEventListener('click', this._onGearClick)
     document.removeEventListener('click', this._onDocClick)
     document.removeEventListener('click', this._onToolbarDocClick)
+    document.removeEventListener('click', this._hideCtxMenu)
     this._canvas.removeEventListener('wheel', this._onWheel)
     this._canvas.removeEventListener('mousedown', this._onMouseDown)
     this._canvas.removeEventListener('mousemove', this._onCanvasMove)
     this._canvas.removeEventListener('mouseleave', this._onCanvasLeave)
+    this._canvas.removeEventListener('contextmenu', this._onContextMenu)
     document.removeEventListener('mousemove', this._onDocumentMove)
     document.removeEventListener('mouseup', this._onDocumentUp)
+    this._ctxMenu?.remove()
     this._tradeBtnGroup?.remove()
     this._container.removeChild(this._wrapper)
   }
@@ -191,6 +196,7 @@ export class CandlestickChart {
 
     this._chartArea = document.createElement('div')
     this._chartArea.style.cssText = 'position:relative;flex:1;display:flex;flex-direction:column;min-width:0'
+    this._chartArea.addEventListener('contextmenu', (e) => e.preventDefault())
     this._wrapper.appendChild(this._chartArea)
 
     this._detectTheme()
@@ -213,6 +219,7 @@ export class CandlestickChart {
     }
 
     this._setupEvents()
+    this._setupContextMenu()
 
     this._loadFont().then(() => {
       this._fontReady = true
@@ -223,6 +230,57 @@ export class CandlestickChart {
         this.setData(this._data)
       }
     })
+  }
+
+  _setupContextMenu() {
+    if (!this._timeframes || !this._timeframes.length) return
+    const c = this._colors
+
+    this._ctxMenu = document.createElement('div')
+    this._ctxMenu.style.cssText =
+      'position:fixed;z-index:9999;display:none;' +
+      'background:' + c.bg + ';border:1px solid ' + c.grid + ';' +
+      'padding:4px 0;font:11px "Terminal Grotesque",monospace;min-width:80px'
+
+    for (const tf of this._timeframes) {
+      const item = document.createElement('div')
+      item.textContent = tf
+      item.style.cssText =
+        'padding:4px 12px;cursor:pointer;color:' + c.text + ';background:inherit'
+      item.addEventListener('mouseenter', () => { item.style.background = c.grid })
+      item.addEventListener('mouseleave', () => { item.style.background = 'inherit' })
+      item.addEventListener('click', () => {
+        this._ctxMenu.style.display = 'none'
+        if (this._onTimeframeChange) this._onTimeframeChange(tf)
+      })
+      this._ctxMenu.appendChild(item)
+    }
+
+    this._onContextMenu = (e) => {
+      e.preventDefault()
+      const rect = this._canvas.getBoundingClientRect()
+      const mx = e.clientX - rect.left
+      const my = e.clientY - rect.top
+      const m = this._lastMargin || this._getMargin()
+      const chartW = this._width - m.left - m.right
+      const chartH = this._height - m.top - m.bottom
+      if (mx < m.left || mx > m.left + chartW || my < m.top || my > m.top + chartH) return
+
+      this._ctxMenu.style.display = 'block'
+      this._ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - this._ctxMenu.offsetWidth - 4) + 'px'
+      this._ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - this._ctxMenu.offsetHeight - 4) + 'px'
+    }
+
+    this._hideCtxMenu = (e) => {
+      if (this._ctxMenu.style.display !== 'none' && !this._ctxMenu.contains(e.target)) {
+        this._ctxMenu.style.display = 'none'
+      }
+    }
+
+    this._canvas.addEventListener('contextmenu', this._onContextMenu)
+    document.addEventListener('click', this._hideCtxMenu)
+
+    document.body.appendChild(this._ctxMenu)
   }
 
   _resize() {

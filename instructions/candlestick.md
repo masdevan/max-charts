@@ -153,7 +153,6 @@ chart.setPositions([
 
 - `closeTime` null or absent → running position
 - Close price is read automatically from candle data at `closeTime`
-```
 
 Each position draws:
 - Filled circle at the entry candle with price and date labels
@@ -184,6 +183,24 @@ Trades placed via the Buy/Sell buttons are automatically added as open positions
 const res = await fetch('collections/positions.json')
 chart.setPositions(await res.json())
 ```
+
+---
+
+## Timeframe context menu
+
+Right-click the chart area to switch timeframes:
+
+```js
+const chart = new CandlestickChart('#chart', {
+  timeframes: ['m1', 'm5', 'm15', 'h1', 'h4', 'd1'],
+  onTimeframeChange: (tf) => {
+    console.log('Switch to', tf)
+    // fetch new data for the selected timeframe
+  }
+})
+```
+
+Omit `timeframes` or pass an empty array to disable the context menu.
 
 ---
 

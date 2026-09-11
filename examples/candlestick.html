@@ -42,6 +42,10 @@ const chart = new CandlestickChart('#chart', {
   onTrade: async (trade) => {
     await new Promise(r => setTimeout(r, 500))
   },
+  timeframes: ['m1', 'm5', 'm15', 'h1', 'h4', 'd1'],
+  onTimeframeChange: (tf) => {
+    console.log('Switch to', tf)
+  },
   positionKeys: {
     decision: 'decision', entry: 'entry', sl: 'sl', tp: 'tp',
     openTime: 'openTime', closeTime: 'closeTime'
